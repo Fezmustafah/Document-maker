@@ -1,4 +1,4 @@
-# deploy.ps1 — one command to ship everything.
+# deploy.ps1 - one command to ship everything.
 #
 #   ./deploy.ps1 "what I changed"
 #
@@ -21,7 +21,7 @@ git add -A
 # nothing staged? bail politely
 $staged = git diff --cached --name-only
 if (-not $staged) {
-  Write-Host "Nothing to deploy — no changes." -ForegroundColor Yellow
+  Write-Host "Nothing to deploy - no changes." -ForegroundColor Yellow
   exit 0
 }
 
@@ -32,5 +32,5 @@ git commit -m $Message
 git push origin main
 
 Write-Host ""
-Write-Host "Pushed. Watch the build: https://github.com/Fezmustafah/Document-maker/actions" -ForegroundColor Green
+Write-Host "Pushed. Watch the build: https://github.com/Fezmustafah/fezmustafah.github.io/actions" -ForegroundColor Green
 Write-Host "Site live in ~90s. AI function redeploys only if you changed app/supabase/functions." -ForegroundColor Green

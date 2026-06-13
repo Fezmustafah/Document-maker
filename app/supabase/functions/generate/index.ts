@@ -3,7 +3,8 @@
 // { title, blocks[...] }. The Gemini key lives in this function's secret env,
 // not in the browser bundle.
 //
-// Deploy:
+// Deploy: automatic via .github/workflows/functions.yml on push to main.
+// Manual fallback:
 //   supabase functions deploy generate
 //   supabase secrets set GEMINI_API_KEY=<key> GEMINI_MODEL=gemini-2.5-flash
 
