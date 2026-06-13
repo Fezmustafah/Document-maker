@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useAuth } from "./AuthProvider.jsx";
 import { migrateLocalToCloud } from "../lib/storage.js";
 
-export default function AuthBar({ onAuthChange }) {
+export default function AuthBar({ onAuthChange, onSignup }) {
   const auth = useAuth();
   const [open, setOpen] = useState(false);
 
@@ -33,7 +33,7 @@ export default function AuthBar({ onAuthChange }) {
       <button onClick={() => setOpen(true)} className="rounded border border-navy px-3 py-1.5 text-sm text-navy hover:bg-navy hover:text-paper">
         Sign in
       </button>
-      {open && <AuthModal onClose={() => setOpen(false)} onDone={() => { setOpen(false); onAuthChange?.(); }} />}
+      {open && <AuthModal onClose={() => setOpen(false)} onDone={() => { setOpen(false); onAuthChange?.(); }} onSignup={onSignup} />}
     </>
   );
 }
@@ -56,7 +56,7 @@ function SyncButton({ onDone }) {
   );
 }
 
-function AuthModal({ onClose, onDone }) {
+function AuthModal({ onClose, onDone, onSignup }) {
   const auth = useAuth();
   const [mode, setMode] = useState("signin");
   const [email, setEmail] = useState("");
@@ -85,6 +85,7 @@ function AuthModal({ onClose, onDone }) {
       setMsg("Check your email to confirm, then sign in.");
       return;
     }
+    if (mode === "signup") onSignup?.();
     onDone?.();
   }
 

@@ -1,14 +1,7 @@
 // Inspector — edit the selected element's properties.
 export default function Inspector({ editor, dispatch }) {
   const el = editor.elements.find((e) => e.id === editor.selectedId);
-  if (!el) {
-    return (
-      <p className="text-xs text-navy/40">
-        Click a block to select it. Drag to move, double-click to edit text, drag the
-        round handle to resize. Use the bar above a block to duplicate or delete.
-      </p>
-    );
-  }
+  if (!el) return null;
 
   const set = (patch) => dispatch({ type: "UPDATE", id: el.id, patch });
   const numBtn = "rounded border border-hairline px-2 py-1 text-sm hover:border-brass";

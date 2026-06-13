@@ -9,9 +9,9 @@ export default function MobileShell({
   editor, dispatch,
   AiPanel, Inspector, EditorLetterheads, EditorPresets,
   storeKey,
-  onPreview, onDownload, onAddText, onAddTable, onAddLine, onOpenStamp,
+  onPreview, onDownload, onClear, onAddText, onAddTable, onAddLine, onOpenStamp,
   onLoadTemplate, templates, MarginControls, AccentInput,
-  AuthBar, onAuthChange,
+  AuthBar, onAuthChange, onSignup, onHelp,
 }) {
   const wrapRef = useRef(null);
   const [scale, setScale] = useState(0.5);
@@ -51,8 +51,8 @@ export default function MobileShell({
           <span className="font-display text-sm font-bold text-navy">Letterhead Studio</span>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={onHelp} aria-label="How it works" className="grid h-9 w-9 place-items-center rounded-full border border-hairline text-navy/60">?</button>
           <button onClick={onDownload} className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-paper">Download</button>
-          <button onClick={() => setSheet("menu")} aria-label="Menu" className="grid h-9 w-9 place-items-center rounded-full border border-hairline">☰</button>
         </div>
       </header>
 
@@ -115,9 +115,13 @@ export default function MobileShell({
             {sheet === "menu" && (
               <SheetHeader title="Menu" onClose={close}>
                 <div className="space-y-3">
-                  <div className="rounded-lg border border-hairline p-3"><AuthBar onAuthChange={onAuthChange} /></div>
-                  <button onClick={() => { onPreview(); close(); }} className="w-full rounded-lg border border-navy px-3 py-2 text-sm text-navy">Preview PDF</button>
+                  <div className="rounded-lg border border-hairline p-3"><AuthBar onAuthChange={onAuthChange} onSignup={onSignup} /></div>
                   <button onClick={() => { onDownload(); close(); }} className="w-full rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-paper">Download PDF</button>
+                  <button onClick={() => { onPreview(); close(); }} className="w-full rounded-lg border border-navy px-3 py-2 text-sm text-navy">Preview PDF</button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => { onHelp?.(); close(); }} className="rounded-lg border border-hairline px-3 py-2 text-sm text-navy">How it works</button>
+                    <button onClick={() => { onClear?.(); close(); }} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">Clear page</button>
+                  </div>
                   <div className="border-t border-hairline pt-3">
                     <p className="label mb-2 text-navy/55">Saved layouts</p>
                     <EditorPresets key={"m:pr:" + storeKey} editor={editor} dispatch={dispatch} />
@@ -129,15 +133,25 @@ export default function MobileShell({
         </div>
       )}
 
-      {/* bottom tab bar */}
+      {/* bottom tab bar — Canva-style with a raised center Add */}
       <nav
         ref={(el) => el && setBottomPad(el.offsetHeight)}
-        className="fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t border-hairline bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur"
+        className="fixed inset-x-0 bottom-0 z-30 flex items-end justify-around border-t border-hairline bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur"
       >
         <Tab label="AI" icon="✦" active={sheet === "ai"} onClick={() => setSheet(sheet === "ai" ? null : "ai")} />
-        <Tab label="Add" icon="+" active={sheet === "add"} onClick={() => setSheet(sheet === "add" ? null : "add")} />
         <Tab label="Paper" icon="📄" active={sheet === "lh"} onClick={() => setSheet(sheet === "lh" ? null : "lh")} />
+        <button
+          onClick={() => setSheet(sheet === "add" ? null : "add")}
+          aria-label="Add"
+          className={
+            "-mt-6 grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl text-paper shadow-lift ring-4 ring-paper transition " +
+            (sheet === "add" ? "bg-brass" : "bg-navy active:scale-95")
+          }
+        >
+          +
+        </button>
         <Tab label="Edit" icon="✎" disabled={!editor.selectedId} active={sheet === "inspect"} onClick={() => setSheet(sheet === "inspect" ? null : "inspect")} />
+        <Tab label="Menu" icon="☰" active={sheet === "menu"} onClick={() => setSheet(sheet === "menu" ? null : "menu")} />
       </nav>
     </div>
   );

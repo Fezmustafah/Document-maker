@@ -38,7 +38,20 @@ function Hero() {
           </p>
           <div className="hero-stagger mt-8 flex flex-wrap items-center gap-3">
             <a href={APP_URL} className="btn-primary">Start free <ArrowRight size={18} /></a>
-            <a href="#proof" className="btn-ghost">See it work</a>
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById("proof");
+                if (!el) return;
+                // window.scrollTo (not scrollIntoView) because body{overflow-x:hidden}
+                // makes the body a non-clipping scroll container that swallows scrollIntoView.
+                const y = el.getBoundingClientRect().top + window.scrollY - 72;
+                window.scrollTo({ top: y, behavior: "smooth" });
+              }}
+              className="btn-ghost"
+            >
+              See it work
+            </button>
           </div>
           <div className="hero-stagger mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink/55">
             <span className="flex items-center gap-1.5"><BadgeCheck size={15} className="text-brass" /> 5 free AI docs to start</span>

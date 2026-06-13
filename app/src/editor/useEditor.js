@@ -118,6 +118,9 @@ function reducer(state, a) {
         selectedId: null,
       };
 
+    case "CLEAR":
+      return { ...state, elements: [], selectedId: null };
+
     case "SET_LETTERHEAD":
       return { ...state, letterhead: { ...state.letterhead, ...a.patch } };
 
