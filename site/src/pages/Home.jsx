@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ArrowRight, BadgeCheck } from "lucide-react";
 import { DocumentMockup, FeaturesGrid, How, Documents, CTA, CountUp, useReveal, SectionLabel, APP_URL } from "../sections.jsx";
+import LiveDemo from "../LiveDemo.jsx";
 
 function Hero() {
   const root = useRef(null);
@@ -27,13 +28,13 @@ function Hero() {
             <span className="h-1.5 w-1.5 rounded-full bg-brass" /> AI documents on your own letterhead
           </div>
           <h1 className="hero-stagger display mt-6 text-[2.7rem] font-extrabold text-ink sm:text-6xl">
-            Professional documents,<br />
-            <span className="flourish font-normal text-brass">in the time it takes to ask.</span>
+            Your company's documents,<br />
+            <span className="flourish font-normal text-brass">written in one sentence.</span>
           </h1>
           <p className="hero-stagger mt-6 max-w-xl text-lg leading-relaxed text-ink/65">
-            Upload your company letterhead once. Then just <em>describe</em> the invoice, quotation or
-            letter you need — by typing or talking — and it's written, perfectly spaced, and ready to
-            print on your own letterhead.
+            Upload your letterhead once. Then <em>describe</em> the invoice, quotation, or
+            certificate you need — by typing or talking. AI writes the wording, builds the table,
+            does the VAT, and lays it out inside your margins. You download a print-ready PDF.
           </p>
           <div className="hero-stagger mt-8 flex flex-wrap items-center gap-3">
             <a href={APP_URL} className="btn-primary">Start free <ArrowRight size={18} /></a>
@@ -61,7 +62,7 @@ function Proof() {
     { node: <>AED <CountUp to={0} /></>, label: "to start — free forever tier" },
   ];
   return (
-    <section id="proof" ref={ref} className="px-5 pb-8 pt-4">
+    <section ref={ref} className="px-5 pb-8 pt-4">
       <div className="mx-auto grid max-w-6xl gap-6 rounded-3xl border border-hairline bg-white p-10 shadow-card sm:grid-cols-3">
         {stats.map((s, i) => (
           <div key={i} className="reveal text-center">
@@ -93,6 +94,7 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <LiveDemo />
       <Proof />
       <FeaturesShort />
       <How />
