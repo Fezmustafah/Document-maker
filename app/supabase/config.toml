@@ -1,0 +1,9 @@
+project_id = "rdvuqqiarykwcnoidinm"
+
+# The generate function is called from the browser with the publishable anon key
+# only (including from guest mode, which has no user session). JWT verification
+# must be OFF so the gateway lets the CORS preflight + anon POST reach the
+# function — otherwise the browser sees "Failed to fetch". The function still
+# requires the anon apikey at the gateway, and the Gemini key stays server-side.
+[functions.generate]
+verify_jwt = false

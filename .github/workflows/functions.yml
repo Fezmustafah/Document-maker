@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "app/supabase/functions/**"
+      - "app/supabase/config.toml"
   workflow_dispatch: {}
 
 jobs:
@@ -32,4 +33,6 @@ jobs:
           # project ref is the subdomain of the Supabase URL
           REF=$(echo "$SUPABASE_URL" | sed -E 's#https?://([^.]+)\..*#\1#')
           echo "Deploying to project: $REF"
-          supabase functions deploy generate --project-ref "$REF"
+          # --no-verify-jwt so the public (anon / guest) browser call + its CORS
+          # preflight reach the function. config.toml sets the same; both for safety.
+          supabase functions deploy generate --project-ref "$REF" --no-verify-jwt

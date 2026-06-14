@@ -82,20 +82,6 @@ export default function AiPanel({ editor, dispatch }) {
     setErr("");
     setBusy(true);
     try {
-      // consume the credit FIRST. Signed-in = atomic RPC; guest = local counter.
-      if (guest) {
-        const left = spendGuestCredit();
-        if (left < 0) { setGuestLeft(0); setErr("You've used your 5 free guest tries. Sign in to keep going."); return; }
-        setGuestLeft(left);
-      } else {
-        const after = await consumeAiCredit();
-        if (!after) {
-          setQuota({ free_left: 0, used: quota?.used ?? 0 });
-          setErr("You've used your 5 free AI documents. Upgrade for more.");
-          return;
-        }
-        setQuota(after);
-      }
       const fields = {
         refNo: refNo.trim(),
         date: docDate.trim(),
@@ -104,8 +90,19 @@ export default function AiPanel({ editor, dispatch }) {
         payment: payment.trim(),
         notes: notes.trim(),
       };
+      // Generate FIRST — only spend a credit once it actually succeeds, so a
+      // network/AI failure never burns one of the free tries.
       const ai = await generateDocument({ brief, docType, company: editor.letterhead.name, fields });
       const els = aiBlocksToElements(ai, editor.letterhead);
+
+      if (guest) {
+        const left = spendGuestCredit();
+        setGuestLeft(left < 0 ? 0 : left);
+      } else {
+        const after = await consumeAiCredit();
+        if (after) setQuota(after);
+      }
+
       if (mode === "replace") dispatch({ type: "SET_ELEMENTS", elements: els });
       else dispatch({ type: "SET_ELEMENTS", elements: [...editor.elements, ...els] });
     } catch (e) {
