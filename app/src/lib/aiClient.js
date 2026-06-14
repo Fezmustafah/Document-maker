@@ -12,8 +12,8 @@ import { makeText, makeRule, makeTable, A4 } from "../editor/model.js";
 
 // Talks to the Supabase Edge Function (Deno). One endpoint for local + prod.
 // The anon key is required by Supabase's gateway even for unauthenticated calls.
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL;
+const SUPABASE_ANON = import.meta.env?.VITE_SUPABASE_ANON_KEY;
 
 export async function generateDocument({ brief, docType, company, fields }) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/generate`, {
@@ -61,12 +61,13 @@ export function aiBlocksToElements(ai, letterhead) {
   const rows = [];
   const addRow = (els, h, gapBase, weight) => rows.push({ els, h, gapBase, weight });
 
-  // boost the gap *before* the signature cluster so the signature sinks down
-  let sigStarted = false;
+  // remember where the signature cluster begins so we can sink it toward the
+  // footer (the gap BEFORE it absorbs the most slack).
+  let sigIndex = null;
   const markSignatureStart = () => {
-    if (sigStarted) return;
-    sigStarted = true;
-    if (rows.length) rows[rows.length - 1].weight += 2.6;
+    if (sigIndex != null) return;
+    sigIndex = rows.length;
+    if (rows.length) rows[rows.length - 1].weight += 3; // claim the pre-signature slack
   };
 
   if (ai.title) {
@@ -95,7 +96,7 @@ export function aiBlocksToElements(ai, letterhead) {
         addRow([makeText({ text, xMm: side, yMm: 0, wMm: W, fontPt: 11.5, bold: true, color: accent })], textH(text, W, 11.5, 1.3), 2, 1);
         break;
       case "paragraph":
-        addRow([makeText({ text, xMm: side, yMm: 0, wMm: W, fontPt: 10.5, color: "#222", lineHeight: 1.5 })], textH(text, W, 10.5, 1.5), 2, 1);
+        addRow([makeText({ text, xMm: side, yMm: 0, wMm: W, fontPt: 10.5, color: "#222", lineHeight: 1.5 })], textH(text, W, 10.5, 1.5), 3, 1);
         break;
       case "bullet":
         addRow([makeText({ text: "•  " + text, xMm: side + 4, yMm: 0, wMm: W - 4, fontPt: 10.5, color: "#222", lineHeight: 1.4 })], textH(text, W - 4, 10.5, 1.4), 1, 0.5);
@@ -108,7 +109,7 @@ export function aiBlocksToElements(ai, letterhead) {
         addRow(
           [makeTable({ xMm: side, yMm: 0, wMm: W, accent, rows: trows, columns: cols.length ? cols : undefined })],
           (trows.length + 1) * 6.2,
-          3,
+          4,
           1.4
         );
         break;
@@ -139,23 +140,41 @@ export function aiBlocksToElements(ai, letterhead) {
 
   if (!rows.length) return [];
 
-  // ---- justify pass: spread leftover space into the inter-row gaps ----------
+  // ---- layout pass: fill the header→footer zone, professionally ----
+  // Body gaps stay TIGHT and EVEN (each capped), so paragraphs are never
+  // stretched apart. The leftover slack is pushed entirely into the gap BEFORE
+  // the signature cluster, anchoring the signature just above the footer — so
+  // the page fills the margins instead of trailing off with blank space, while
+  // the body keeps a clean, even rhythm (the big gap reads as signing space).
+  const MAX_GAP_EXTRA = 10; // mm any normal inter-row gap may absorb
+
   const totalContent = rows.reduce((s, r) => s + r.h, 0);
   const inner = rows.slice(0, -1); // gaps only exist BETWEEN rows
   const totalBaseGap = inner.reduce((s, r) => s + r.gapBase, 0);
-  const totalWeight = inner.reduce((s, r) => s + r.weight, 0);
+  const totalWeight = inner.reduce((s, r) => s + r.weight, 0) || 1;
   let slack = zoneH - totalContent - totalBaseGap;
   if (slack < 0) slack = 0; // content overflows: keep natural spacing, don't crush
+
+  const sigGap = sigIndex != null && sigIndex > 0 ? sigIndex - 1 : -1;
+
+  // 1) even, capped extra for every gap except the pre-signature one
+  const extras = inner.map((r, i) =>
+    i === sigGap ? 0 : Math.min(slack * (r.weight / totalWeight), MAX_GAP_EXTRA)
+  );
+  // 2) the pre-signature gap takes ALL the rest, sinking the signature to the
+  //    footer so the document fills the page. (No signature → leftover stays as
+  //    a modest bottom margin, which is correct for that case.)
+  if (sigGap >= 0) {
+    const used = extras.reduce((a, b) => a + b, 0);
+    extras[sigGap] = Math.max(0, slack - used);
+  }
 
   const els = [];
   let y = zoneTop;
   rows.forEach((r, i) => {
     for (const e of r.els) els.push({ ...e, yMm: e.yMm + y });
     y += r.h;
-    if (i < rows.length - 1) {
-      const extra = totalWeight > 0 ? slack * (r.weight / totalWeight) : 0;
-      y += r.gapBase + extra;
-    }
+    if (i < rows.length - 1) y += r.gapBase + extras[i];
   });
   return els;
 }
