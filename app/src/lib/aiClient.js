@@ -10,19 +10,17 @@
 // space defined by the user's header/footer/side margins.
 import { makeText, makeRule, makeTable, A4 } from "../editor/model.js";
 
-// Talks to the Supabase Edge Function (Deno). One endpoint for local + prod.
-// The anon key is required by Supabase's gateway even for unauthenticated calls.
+// Talks to the Supabase Edge Function (Deno). The function is deployed with
+// verify_jwt=false, so we send a CORS "simple request": Content-Type text/plain
+// and NO apikey/Authorization headers. That avoids the OPTIONS preflight (which
+// the Supabase gateway 500s) — the preflight was the "Failed to fetch" cause.
+// The function still parses the body as JSON regardless of content-type.
 const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL;
-const SUPABASE_ANON = import.meta.env?.VITE_SUPABASE_ANON_KEY;
 
 export async function generateDocument({ brief, docType, company, fields }) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/generate`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: SUPABASE_ANON,
-      Authorization: `Bearer ${SUPABASE_ANON}`,
-    },
+    headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ brief, docType, company, fields: fields || {} }),
   });
   const data = await res.json().catch(() => ({}));
