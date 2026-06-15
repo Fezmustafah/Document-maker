@@ -92,6 +92,16 @@ body {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+@keyframes lhSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* mobile feel: no tap-highlight flash, no 300ms delay, momentum scroll */
+button, a, [role="button"] { -webkit-tap-highlight-color: transparent; }
+.tap { touch-action: manipulation; transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); user-select: none; }
+.tap:active { transform: scale(0.94); }
+.smooth-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scroll-behavior: smooth; }
 
 @media (prefers-reduced-motion: reduce) {
   * {

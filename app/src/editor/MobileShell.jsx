@@ -51,8 +51,8 @@ export default function MobileShell({
           <span className="font-display text-sm font-bold text-navy">Letterhead Studio</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={onHelp} aria-label="How it works" className="grid h-9 w-9 place-items-center rounded-full border border-hairline text-navy/60">?</button>
-          <button onClick={onDownload} className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-paper">Download</button>
+          <button onClick={onHelp} aria-label="How it works" className="tap grid h-9 w-9 place-items-center rounded-full border border-hairline text-navy/60">?</button>
+          <button onClick={onDownload} className="tap rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-paper">Download</button>
         </div>
       </header>
 
@@ -63,7 +63,7 @@ export default function MobileShell({
           paddingBottom: bottomPad + 16,
           background: "radial-gradient(900px 500px at 50% -10%, rgba(169,133,63,0.08), transparent 60%), #e8e4dc",
         }}
-        className="flex-1 overflow-auto p-2"
+        className="smooth-scroll flex-1 overflow-auto p-2"
       >
         <div className="mx-auto">
           <Canvas editor={editor} dispatch={dispatch} scale={scale} />
@@ -73,8 +73,11 @@ export default function MobileShell({
       {/* sheet */}
       {sheet && (
         <div className="fixed inset-0 z-40 flex items-end">
-          <div className="absolute inset-0 bg-black/30" onClick={close} />
-          <div className="relative z-10 max-h-[78dvh] w-full overflow-auto rounded-t-2xl border-t border-hairline bg-white p-4 shadow-lift">
+          <div className="absolute inset-0 bg-black/30" style={{ animation: "lhFade .2s ease-out" }} onClick={close} />
+          <div
+            className="smooth-scroll relative z-10 max-h-[80dvh] w-full overflow-auto rounded-t-2xl border-t border-hairline bg-white p-4 shadow-lift"
+            style={{ animation: "lhSlideUp .32s cubic-bezier(.16,1,.3,1)" }}
+          >
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline" />
             {sheet === "ai" && (
               <SheetHeader title="✦ Write with AI" onClose={close}><AiPanel editor={editor} dispatch={dispatch} /></SheetHeader>
@@ -92,7 +95,7 @@ export default function MobileShell({
                   <div className="flex flex-wrap gap-2">
                     {templates.map((t) => (
                       <button key={t.id} onClick={() => { onLoadTemplate(t.id); close(); }}
-                        className="rounded-full border border-hairline px-3 py-1.5 text-xs text-navy">
+                        className="tap rounded-full border border-hairline px-3 py-1.5 text-xs text-navy">
                         {t.label}
                       </button>
                     ))}
@@ -116,11 +119,11 @@ export default function MobileShell({
               <SheetHeader title="Menu" onClose={close}>
                 <div className="space-y-3">
                   <div className="rounded-lg border border-hairline p-3"><AuthBar onAuthChange={onAuthChange} onSignup={onSignup} /></div>
-                  <button onClick={() => { onDownload(); close(); }} className="w-full rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-paper">Download PDF</button>
-                  <button onClick={() => { onPreview(); close(); }} className="w-full rounded-lg border border-navy px-3 py-2 text-sm text-navy">Preview PDF</button>
+                  <button onClick={() => { onDownload(); close(); }} className="tap w-full rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-paper">Download PDF</button>
+                  <button onClick={() => { onPreview(); close(); }} className="tap w-full rounded-lg border border-navy px-3 py-2 text-sm text-navy">Preview PDF</button>
                   <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => { onHelp?.(); close(); }} className="rounded-lg border border-hairline px-3 py-2 text-sm text-navy">How it works</button>
-                    <button onClick={() => { onClear?.(); close(); }} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">Clear page</button>
+                    <button onClick={() => { onHelp?.(); close(); }} className="tap rounded-lg border border-hairline px-3 py-2 text-sm text-navy">How it works</button>
+                    <button onClick={() => { onClear?.(); close(); }} className="tap rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">Clear page</button>
                   </div>
                   <div className="border-t border-hairline pt-3">
                     <p className="label mb-2 text-navy/55">Saved layouts</p>
@@ -144,9 +147,10 @@ export default function MobileShell({
           onClick={() => setSheet(sheet === "add" ? null : "add")}
           aria-label="Add"
           className={
-            "-mt-6 grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl text-paper shadow-lift ring-4 ring-paper transition " +
-            (sheet === "add" ? "bg-brass" : "bg-navy active:scale-95")
+            "tap -mt-6 grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl text-paper shadow-lift ring-4 ring-paper " +
+            (sheet === "add" ? "rotate-45 bg-brass" : "bg-navy")
           }
+          style={{ transition: "transform .25s cubic-bezier(.16,1,.3,1), background .2s" }}
         >
           +
         </button>
@@ -163,11 +167,11 @@ function Tab({ label, icon, active, disabled, onClick }) {
       onClick={onClick}
       disabled={disabled}
       className={
-        "flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-semibold " +
-        (disabled ? "text-navy/25" : active ? "bg-navy text-paper" : "text-navy/70 active:bg-navy/10")
+        "tap flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-semibold transition-colors " +
+        (disabled ? "text-navy/25" : active ? "bg-navy text-paper" : "text-navy/70")
       }
     >
-      <span className="text-base">{icon}</span>
+      <span className={"text-base transition-transform " + (active ? "scale-110" : "")}>{icon}</span>
       {label}
     </button>
   );
@@ -178,7 +182,7 @@ function SheetHeader({ title, onClose, children }) {
     <>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-display text-base font-bold text-navy">{title}</h3>
-        <button onClick={onClose} className="text-navy/50">✕</button>
+        <button onClick={onClose} className="tap grid h-8 w-8 place-items-center rounded-full text-navy/50 hover:bg-black/[0.04]">✕</button>
       </div>
       {children}
     </>
@@ -187,7 +191,7 @@ function SheetHeader({ title, onClose, children }) {
 
 function Big({ label, onClick }) {
   return (
-    <button onClick={onClick} className="rounded-xl border border-hairline px-3 py-3 text-sm font-semibold text-navy active:bg-navy/5">
+    <button onClick={onClick} className="tap rounded-xl border border-hairline px-3 py-3 text-sm font-semibold text-navy">
       {label}
     </button>
   );
