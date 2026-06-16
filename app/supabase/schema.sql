@@ -23,12 +23,27 @@ create table if not exists public.layouts (
   created_at timestamptz default now()
 );
 
+-- saved signatures / stamps (blended transparent PNG data URLs), reused across
+-- both the letterhead builder and the Sign-a-PDF tool.
+create table if not exists public.signatures (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name       text not null default 'Signature',
+  data_url   text,                 -- transparent PNG data URL
+  aspect     real default 0.5,     -- height / width
+  created_at timestamptz default now()
+);
+
 alter table public.letterheads enable row level security;
 alter table public.layouts     enable row level security;
+alter table public.signatures  enable row level security;
 
 -- one policy per table: full access to your own rows only
 create policy "own letterheads" on public.letterheads
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "own layouts" on public.layouts
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "own signatures" on public.signatures
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

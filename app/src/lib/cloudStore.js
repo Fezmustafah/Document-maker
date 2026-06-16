@@ -52,3 +52,27 @@ export async function deletePreset(id) {
   const { error } = await supabase.from("layouts").delete().eq("id", id);
   if (error) throw error;
 }
+
+// --- signatures / stamps ---
+const sigFromRow = (r) => ({ id: r.id, name: r.name, dataUrl: r.data_url, aspect: r.aspect, createdAt: r.created_at });
+
+export async function listSignatures() {
+  const { data, error } = await supabase.from("signatures").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(sigFromRow);
+}
+
+export async function saveSignature(sig) {
+  const row = { name: sig.name || "Signature", data_url: sig.dataUrl, aspect: sig.aspect };
+  const q = sig.id
+    ? supabase.from("signatures").update(row).eq("id", sig.id).select().single()
+    : supabase.from("signatures").insert(row).select().single();
+  const { data, error } = await q;
+  if (error) throw error;
+  return sigFromRow(data);
+}
+
+export async function deleteSignature(id) {
+  const { error } = await supabase.from("signatures").delete().eq("id", id);
+  if (error) throw error;
+}

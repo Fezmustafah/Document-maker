@@ -14,6 +14,9 @@ export const deleteLetterhead = (...a) => store().deleteLetterhead(...a);
 export const listPresets = (...a) => store().listPresets(...a);
 export const savePreset = (...a) => store().savePreset(...a);
 export const deletePreset = (...a) => store().deletePreset(...a);
+export const listSignatures = (...a) => store().listSignatures(...a);
+export const saveSignature = (...a) => store().saveSignature(...a);
+export const deleteSignature = (...a) => store().deleteSignature(...a);
 
 // one-time push of everything in the local store up to the cloud (used after
 // first sign-in so existing offline work isn't stranded).
@@ -23,5 +26,7 @@ export async function migrateLocalToCloud() {
   for (const lh of lhs) { const { id, ...rest } = lh; await cloud.saveLetterhead(rest); }
   const ps = await local.listPresets();
   for (const p of ps) { const { id, ...rest } = p; await cloud.savePreset(rest); }
-  return { letterheads: lhs.length, presets: ps.length };
+  const sigs = await local.listSignatures();
+  for (const s of sigs) { const { id, ...rest } = s; await cloud.saveSignature(rest); }
+  return { letterheads: lhs.length, presets: ps.length, signatures: sigs.length };
 }
