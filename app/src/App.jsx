@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useEditor } from "./editor/useEditor.js";
 import { makeText, makeRule, makeTable, TEMPLATE_LIST, A4, PXPM } from "./editor/model.js";
 import { exportEditorPdf } from "./lib/exportPdf.js";
-import { saveLetterhead } from "./lib/storage.js";
+import { saveLetterhead, migrateLocalToCloud } from "./lib/storage.js";
 import Canvas from "./editor/Canvas.jsx";
 import Inspector from "./editor/Inspector.jsx";
 import EditorLetterheads from "./editor/EditorLetterheads.jsx";
@@ -83,6 +83,12 @@ export default function App() {
   const storeKey = (auth?.user?.id || "local") + ":" + refreshKey;
   const lh = editor.letterhead;
   const saveTimer = useRef(null);
+
+  // On login: auto-migrate local letterheads/signs to cloud, then refresh components.
+  useEffect(() => {
+    if (!auth?.user?.id || !auth?.cloudEnabled) return;
+    migrateLocalToCloud().catch(() => {}).finally(() => setRefreshKey((k) => k + 1));
+  }, [auth?.user?.id]);
 
   useEffect(() => {
     if (!lh.id) return;

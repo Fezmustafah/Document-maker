@@ -51,6 +51,7 @@ export default function MobileShell({
           <span className="font-display text-sm font-bold text-navy">Letterhead Studio</span>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={onSignMode} aria-label="Sign a PDF" title="Sign a PDF" className="tap grid h-9 w-9 place-items-center rounded-full border border-hairline text-navy/60">✒</button>
           <button onClick={onHelp} aria-label="How it works" className="tap grid h-9 w-9 place-items-center rounded-full border border-hairline text-navy/60">?</button>
           <button onClick={onDownload} className="tap rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-paper">Download</button>
         </div>

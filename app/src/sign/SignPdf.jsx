@@ -56,6 +56,18 @@ export default function SignPdf({ onExit, storeKey, signedIn }) {
   const update = (id, patch) => setPlacements((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   const remove = (id) => { setPlacements((ps) => ps.filter((p) => p.id !== id)); setSelectedId(null); };
 
+  function duplicateOnAllPages() {
+    const pl = placements.find((p) => p.id === selectedId);
+    if (!pl || !doc) return;
+    const extras = [];
+    for (let i = 0; i < doc.numPages; i++) {
+      if (i === pl.pageIndex) continue;
+      extras.push({ id: rid(), pageIndex: i, xFrac: pl.xFrac, yFrac: pl.yFrac, wFrac: pl.wFrac, aspect: pl.aspect, dataUrl: pl.dataUrl });
+    }
+    setPlacements((ps) => [...ps, ...extras]);
+    setSelectedId(null);
+  }
+
   function onDragStart(e, pl) {
     e.stopPropagation(); e.preventDefault();
     setSelectedId(pl.id);
@@ -115,20 +127,25 @@ export default function SignPdf({ onExit, storeKey, signedIn }) {
         </button>
       </header>
 
-      {/* signatures strip */}
+      {/* signatures strip — portrait cards with name label */}
       <div className="smooth-scroll shrink-0 overflow-x-auto border-b border-black/[0.06] bg-white px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setBlendOpen(true)} className="tap flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-brass/50 bg-brass/[0.05] text-[10px] font-semibold text-navy">
-            <span className="text-lg leading-none text-brass">＋</span> Add sign
+        <div className="flex items-end gap-2">
+          <button onClick={() => setBlendOpen(true)}
+            className="tap flex h-28 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-brass/50 bg-brass/[0.05] text-[10px] font-semibold text-navy">
+            <span className="text-2xl leading-none text-brass">＋</span>
+            <span>Add sign</span>
           </button>
           {signs.length === 0 && (
-            <span className="px-2 text-xs text-slate">No saved signatures yet — add your sign or stamp once, reuse it forever.</span>
+            <span className="px-2 text-xs text-slate">No saved signatures yet — add your sign or stamp once, reuse forever.</span>
           )}
           {signs.map((s) => (
             <div key={s.id} className="group relative shrink-0">
               <button onClick={() => place(s)} title={`Place "${s.name}"`}
-                className="tap flex h-16 w-20 items-center justify-center rounded-xl border border-black/[0.06] p-1" style={{ background: CHECKER }}>
-                <img src={s.dataUrl} alt={s.name} className="max-h-14 max-w-full object-contain" />
+                className="tap flex w-20 flex-col overflow-hidden rounded-xl border border-black/[0.06]">
+                <div className="flex h-20 w-full items-center justify-center p-1.5" style={{ background: CHECKER }}>
+                  <img src={s.dataUrl} alt={s.name} className="max-h-16 max-w-full object-contain" />
+                </div>
+                <div className="truncate bg-white px-1.5 py-1 text-center text-[10px] font-semibold text-navy">{s.name}</div>
               </button>
               <button onClick={async () => { await deleteSignature(s.id); refreshSigns(); }}
                 className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 place-items-center rounded-full bg-red-600 text-[10px] text-white group-hover:grid">✕</button>
@@ -141,7 +158,7 @@ export default function SignPdf({ onExit, storeKey, signedIn }) {
 
       {/* pages */}
       <div ref={scrollRef} onScroll={onScroll} onPointerDown={() => setSelectedId(null)}
-        className="smooth-scroll flex-1 overflow-auto p-3 sm:p-6">
+        className="smooth-scroll relative flex-1 overflow-auto p-3 sm:p-6">
         {!doc ? (
           <label className="mx-auto mt-10 flex max-w-md cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-black/15 bg-white/60 p-10 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-navy text-2xl text-brass">⬆</span>
@@ -175,7 +192,26 @@ export default function SignPdf({ onExit, storeKey, signedIn }) {
                 ))}
               </div>
             ))}
-            <p className="pb-4 text-xs text-slate">Tap a saved signature above to drop it on the page in view · drag to move · corner handle to resize.</p>
+            <p className="pb-20 text-xs text-slate">Tap a saved signature above to drop it on the page in view · drag to move · corner handle to resize.</p>
+          </div>
+        )}
+
+        {/* floating action bar — appears when a placement is selected */}
+        {selectedId && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex justify-center">
+            <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-2xl ring-1 ring-black/10"
+              style={{ animation: "lhSlideUp .22s cubic-bezier(.16,1,.3,1)" }}>
+              {doc && doc.numPages > 1 && (
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); duplicateOnAllPages(); }}
+                  className="tap flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-xs font-semibold text-paper">
+                  ⧉ Duplicate on all pages
+                </button>
+              )}
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); remove(selectedId); }}
+                className="tap flex items-center gap-1 rounded-full bg-red-600 px-3 py-2 text-xs font-semibold text-white">
+                ✕ Remove
+              </button>
+            </div>
           </div>
         )}
       </div>
