@@ -8,7 +8,7 @@ import {
   getSettings, saveSettings as persistSettings, getMeta, setMeta as persistMeta,
 } from "./trackerStorage.js";
 import { DEFAULT_SETTINGS } from "./constants.js";
-import { listSignatures } from "../../lib/storage.js";
+import { listSignatures, listLetterheads } from "../../lib/storage.js";
 import { todayIso, addDays, daysBetween, dateLong } from "./format.js";
 import DailyTab from "./DailyTab.jsx";
 import WeeklyTab from "./WeeklyTab.jsx";
@@ -27,6 +27,7 @@ export default function TrackerPage({ onExit, storeKey }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [meta, setMeta] = useState({});
   const [signatures, setSignatures] = useState([]);
+  const [letterheads, setLetterheads] = useState([]);
   const [activeSigId, setActiveSigId] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -41,15 +42,22 @@ export default function TrackerPage({ onExit, storeKey }) {
     })();
   }, []);
 
-  // signatures (reload when auth/cloud changes — storeKey flips)
+  // signatures + letterheads (reload when auth/cloud changes — storeKey flips)
   useEffect(() => {
     listSignatures().then(setSignatures).catch(() => setSignatures([]));
+    listLetterheads().then(setLetterheads).catch(() => setLetterheads([]));
   }, [storeKey]);
 
   const activeSig = useMemo(
     () => signatures.find((s) => s.id === activeSigId) || null,
     [signatures, activeSigId],
   );
+
+  // resolved letterhead to print on, when the user chose that header style
+  const activeLetterhead = useMemo(() => {
+    if (settings.header?.style !== "letterhead") return null;
+    return letterheads.find((l) => l.id === settings.header.letterheadId) || null;
+  }, [settings.header, letterheads]);
 
   // every order, flattened + sorted chronologically with its per-day index
   const rows = useMemo(() => {
@@ -175,6 +183,7 @@ export default function TrackerPage({ onExit, storeKey }) {
               dayOrders={dayOrders} settings={settings}
               onAdd={addOrder} onRemove={removeOrder}
               signatures={signatures} activeSig={activeSig} activeSigId={activeSigId} onPickSig={setActiveSigId}
+              letterhead={activeLetterhead}
             />
           )}
           {tab === "weekly" && (
@@ -183,9 +192,12 @@ export default function TrackerPage({ onExit, storeKey }) {
               periodStart={periodStart} periodEnd={periodEnd}
               onClearWeek={clearWeek}
               signatures={signatures} activeSig={activeSig} activeSigId={activeSigId} onPickSig={setActiveSigId}
+              letterhead={activeLetterhead}
             />
           )}
-          {tab === "settings" && <SettingsTab settings={settings} onSave={saveSettings} />}
+          {tab === "settings" && (
+            <SettingsTab settings={settings} onSave={saveSettings} letterheads={letterheads} />
+          )}
         </div>
       </div>
     </div>

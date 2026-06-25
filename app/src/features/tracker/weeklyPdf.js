@@ -4,13 +4,12 @@
 // background gotcha) so the navy header repeats cleanly on every page.
 import {
   PAGE, C, newDoc, fill, stroke, ink,
-  drawHeader, drawTitle, drawSignature, drawFooter,
+  drawHeader, drawTitle, drawSignature, drawFooter, drawLetterheadBg,
 } from "./pdfShared.js";
 import { money, dateShort, dateLong, invoiceNo, totals } from "./format.js";
 
 const COLS = { num: 18, inv: 24, date: 60, loc: 88, qtyR: 168, amtR: 196 };
 const ROW_H = 7;
-const BODY_BOTTOM = PAGE.h - 16; // keep clear of the footer bar
 
 function tableHead(doc, y) {
   const { margin, w } = PAGE;
@@ -30,36 +29,52 @@ function tableHead(doc, y) {
   return y + 8;
 }
 
-export function buildWeekly({ rows, settings, periodStart, periodEnd, sig }) {
+export function buildWeekly({ rows, settings, periodStart, periodEnd, sig, letterhead }) {
   const { seller, buyer, item } = settings;
+  const useLh = !!(letterhead && letterhead.dataUrl);
   const doc = newDoc();
   const { w, margin } = PAGE;
   const rightX = w - margin;
 
-  drawHeader(doc, seller);
-  drawTitle(doc, "WEEKLY STATEMENT", 42);
+  const bodyBottom = useLh ? PAGE.h - (letterhead.marginBottom || 20) - 6 : PAGE.h - 16;
+  const contTop = useLh ? (letterhead.marginTop || 40) + 6 : 38; // table top on continuation pages
+  const endPage = () => { if (!useLh) drawFooter(doc, seller); };
+  const startContPage = () => {
+    endPage();
+    doc.addPage();
+    if (useLh) drawLetterheadBg(doc, letterhead);
+    else drawHeader(doc, seller);
+    return tableHead(doc, contTop);
+  };
+
+  let titleY;
+  if (useLh) {
+    drawLetterheadBg(doc, letterhead);
+    titleY = (letterhead.marginTop || 40) + 8;
+  } else {
+    drawHeader(doc, seller);
+    titleY = 42;
+  }
+  drawTitle(doc, "WEEKLY STATEMENT", titleY);
 
   ink(doc, C.text);
   doc.setFont("helvetica", "normal").setFontSize(9.5);
-  doc.text(`Period: ${dateShort(periodStart)} — ${dateShort(periodEnd)}`, w / 2, 50, { align: "center" });
+  doc.text(`Period: ${dateShort(periodStart)} — ${dateShort(periodEnd)}`, w / 2, titleY + 8, { align: "center" });
   ink(doc, C.navy);
   doc.setFont("helvetica", "bold").setFontSize(9.5);
-  doc.text(`${buyer.name}     TRN: ${buyer.trn}`, w / 2, 56, { align: "center" });
+  doc.text(`${buyer.name}     TRN: ${buyer.trn}`, w / 2, titleY + 14, { align: "center" });
   if (buyer.address) {
     ink(doc, C.muted);
     doc.setFont("helvetica", "normal").setFontSize(8);
-    doc.text(buyer.address.replace(/\n/g, ", "), w / 2, 61, { align: "center" });
+    doc.text(buyer.address.replace(/\n/g, ", "), w / 2, titleY + 19, { align: "center" });
   }
 
-  let y = tableHead(doc, 66);
+  let y = tableHead(doc, titleY + 24);
 
   rows.forEach((r, i) => {
     // page break before a row that wouldn't fit
-    if (y + ROW_H > BODY_BOTTOM) {
-      drawFooter(doc, seller);
-      doc.addPage();
-      drawHeader(doc, seller);
-      y = tableHead(doc, 38);
+    if (y + ROW_H > bodyBottom) {
+      y = startContPage();
     }
     if (i % 2 === 1) {
       fill(doc, C.cream);
@@ -84,11 +99,12 @@ export function buildWeekly({ rows, settings, periodStart, periodEnd, sig }) {
 
   // grand totals — push to a fresh page if there isn't room
   const t = totals(rows.map((r) => r.order), item.vatRate);
-  if (y + 48 > BODY_BOTTOM) {
-    drawFooter(doc, seller);
+  if (y + 48 > bodyBottom) {
+    endPage();
     doc.addPage();
-    drawHeader(doc, seller);
-    y = 40;
+    if (useLh) drawLetterheadBg(doc, letterhead);
+    else drawHeader(doc, seller);
+    y = contTop;
   }
   let ty = y + 10;
   ink(doc, C.text);
@@ -116,8 +132,9 @@ export function buildWeekly({ rows, settings, periodStart, periodEnd, sig }) {
     ty + 6,
   );
 
-  drawSignature(doc, sig, rightX, Math.min(ty + 34, PAGE.h - 24));
-  drawFooter(doc, seller);
+  const sigLineY = useLh ? PAGE.h - (letterhead.marginBottom || 20) - 8 : Math.min(ty + 34, PAGE.h - 24);
+  drawSignature(doc, sig, rightX, sigLineY);
+  if (!useLh) drawFooter(doc, seller);
   return doc;
 }
 

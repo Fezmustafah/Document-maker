@@ -29,6 +29,9 @@ export const DEFAULT_SETTINGS = {
   seller: { ...DEFAULT_SELLER },
   buyer: { ...DEFAULT_BUYER },
   item: { ...DEFAULT_ITEM },
+  // header style: built-in drawn header (default) OR one of the user's saved
+  // letterheads rendered as the page background.
+  header: { style: "drawn", letterheadId: null }, // "drawn" | "letterhead"
 };
 
 // Exact RGB values mirrored from the Tailwind tracker tokens (see tailwind.config.js).

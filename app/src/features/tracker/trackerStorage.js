@@ -29,6 +29,7 @@ export async function getSettings() {
     seller: { ...DEFAULT_SETTINGS.seller, ...(saved.seller || {}) },
     buyer: { ...DEFAULT_SETTINGS.buyer, ...(saved.buyer || {}) },
     item: { ...DEFAULT_SETTINGS.item, ...(saved.item || {}) },
+    header: { ...DEFAULT_SETTINGS.header, ...(saved.header || {}) },
   };
 }
 

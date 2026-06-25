@@ -13,6 +13,21 @@ export function newDoc() {
   return new jsPDF({ unit: "mm", format: "a4" });
 }
 
+// Render a saved letterhead image as the full-page background (A4). Used when
+// the user opts to print invoices on their official letterhead instead of the
+// built-in drawn header/footer.
+export function drawLetterheadBg(doc, lh) {
+  if (!lh || !lh.dataUrl) return;
+  let fmt = "JPEG";
+  const m = /^data:image\/([a-z0-9+]+)/i.exec(lh.dataUrl);
+  if (m) fmt = m[1].toUpperCase() === "PNG" ? "PNG" : "JPEG";
+  try {
+    doc.addImage(lh.dataUrl, fmt, 0, 0, PAGE.w, PAGE.h, undefined, "FAST");
+  } catch {
+    /* unsupported image — leave the page blank rather than crash */
+  }
+}
+
 // colour helpers — keep call sites readable
 export const fill = (doc, c) => doc.setFillColor(c.r, c.g, c.b);
 export const stroke = (doc, c) => doc.setDrawColor(c.r, c.g, c.b);

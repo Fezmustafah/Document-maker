@@ -30,12 +30,17 @@ function Card({ title, children }) {
   );
 }
 
-export default function SettingsTab({ settings, onSave }) {
+export default function SettingsTab({ settings, onSave, letterheads = [] }) {
   const [draft, setDraft] = useState(settings);
   const [saved, setSaved] = useState(false);
 
   const set = (group, key) => (v) => {
     setDraft((d) => ({ ...d, [group]: { ...d[group], [key]: v } }));
+    setSaved(false);
+  };
+  const header = draft.header || { style: "drawn", letterheadId: null };
+  const setHeader = (patch) => {
+    setDraft((d) => ({ ...d, header: { ...d.header, ...patch } }));
     setSaved(false);
   };
 
@@ -69,6 +74,64 @@ export default function SettingsTab({ settings, onSave }) {
           <Field label="Unit price (AED)" type="number" value={draft.item.unitPrice} onChange={set("item", "unitPrice")} />
           <Field label="VAT rate (%)" type="number" value={draft.item.vatRate} onChange={set("item", "vatRate")} />
         </div>
+      </Card>
+
+      <Card title="Invoice header">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setHeader({ style: "drawn" })}
+            className={
+              "rounded-lg border p-3 text-left text-sm transition " +
+              (header.style === "drawn" ? "border-tgold bg-tcream ring-2 ring-tgold/30" : "border-tcreamDark hover:border-tgold/50")
+            }
+          >
+            <span className="block font-semibold text-tnavy">Drawn header</span>
+            <span className="text-xs text-slate">Built-in navy/gold Bait Al Madina header &amp; footer.</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setHeader({ style: "letterhead" })}
+            className={
+              "rounded-lg border p-3 text-left text-sm transition " +
+              (header.style === "letterhead" ? "border-tgold bg-tcream ring-2 ring-tgold/30" : "border-tcreamDark hover:border-tgold/50")
+            }
+          >
+            <span className="block font-semibold text-tnavy">Use my letterhead</span>
+            <span className="text-xs text-slate">Print invoices on a saved letterhead image.</span>
+          </button>
+        </div>
+
+        {header.style === "letterhead" && (
+          <div className="mt-3">
+            {letterheads.length === 0 ? (
+              <p className="text-xs text-slate">
+                No saved letterheads yet. Upload one in the main <span className="font-semibold text-tnavy">Studio</span> (Letterhead panel) and it will appear here.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {letterheads.map((l) => {
+                  const active = l.id === header.letterheadId;
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => setHeader({ letterheadId: l.id })}
+                      title={l.name}
+                      className={
+                        "w-24 overflow-hidden rounded-lg border bg-white transition " +
+                        (active ? "border-tgold ring-2 ring-tgold/40" : "border-tcreamDark hover:border-tgold/60")
+                      }
+                    >
+                      <img src={l.dataUrl} alt={l.name} className="block h-28 w-full object-cover object-top" />
+                      <span className="block truncate px-1.5 py-1 text-[10px] text-slate">{l.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       <div className="flex items-center gap-3">

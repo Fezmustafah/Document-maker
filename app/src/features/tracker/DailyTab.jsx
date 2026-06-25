@@ -6,7 +6,7 @@ import SignatureStrip from "./SignatureStrip.jsx";
 
 export default function DailyTab({
   date, setDate, dayOrders, settings,
-  onAdd, onRemove, signatures, activeSig, activeSigId, onPickSig,
+  onAdd, onRemove, signatures, activeSig, activeSigId, onPickSig, letterhead,
 }) {
   const [qty, setQty] = useState("");
   const [location, setLocation] = useState("");
@@ -23,7 +23,7 @@ export default function DailyTab({
   const t = totals(dayOrders, item.vatRate);
 
   function downloadOne(order, index) {
-    downloadInvoice({ order, date, index, settings, sig: activeSig });
+    downloadInvoice({ order, date, index, settings, sig: activeSig, letterhead });
   }
   async function downloadAll() {
     for (let i = 0; i < dayOrders.length; i++) {

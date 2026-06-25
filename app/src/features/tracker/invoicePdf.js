@@ -3,7 +3,7 @@
 // items table is drawn by hand so the styling matches the weekly statement.
 import {
   PAGE, C, newDoc, fill, stroke, ink,
-  drawHeader, drawTitle, drawSignature, drawFooter, moneyRow,
+  drawHeader, drawTitle, drawSignature, drawFooter, drawLetterheadBg, moneyRow,
 } from "./pdfShared.js";
 import { money, dateLong, invoiceNo, totals } from "./format.js";
 
@@ -34,30 +34,40 @@ function partyBox(doc, x, y, w, title, lines) {
   return y + headerH + bodyH;
 }
 
-export function buildInvoice({ order, date, index, settings, sig }) {
+export function buildInvoice({ order, date, index, settings, sig, letterhead }) {
   const { seller, buyer, item } = settings;
+  const useLh = !!(letterhead && letterhead.dataUrl);
   const doc = newDoc();
   const { w, margin } = PAGE;
   const rightX = w - margin;
 
-  drawHeader(doc, seller);
+  // header: built-in drawn header, OR the user's letterhead as background
+  let titleY;
+  if (useLh) {
+    drawLetterheadBg(doc, letterhead);
+    titleY = (letterhead.marginTop || 40) + 8; // start below the letterhead's own header
+  } else {
+    drawHeader(doc, seller);
+    titleY = 42;
+  }
 
   // title
-  drawTitle(doc, "TAX INVOICE", 42);
+  drawTitle(doc, "TAX INVOICE", titleY);
 
   // meta row
+  const metaY = titleY + 11;
   ink(doc, C.text);
   doc.setFont("helvetica", "bold").setFontSize(9.5);
-  doc.text(`Invoice No: ${invoiceNo(date, index)}`, margin, 53);
+  doc.text(`Invoice No: ${invoiceNo(date, index)}`, margin, metaY);
   doc.setFont("helvetica", "normal");
-  doc.text(`Date: ${dateLong(date)}`, rightX, 53, { align: "right" });
+  doc.text(`Date: ${dateLong(date)}`, rightX, metaY, { align: "right" });
 
   // party boxes
   const boxW = 82;
   const gap = w - margin * 2 - boxW * 2; // remaining space becomes the gutter
   const leftX = margin;
   const rightBoxX = margin + boxW + gap;
-  const boxY = 58;
+  const boxY = titleY + 16;
   partyBox(doc, leftX, boxY, boxW, "FROM (SELLER)", [
     { text: seller.name, bold: true, size: 9.5 },
     // seller.nameAr is intentionally not drawn: jsPDF's built-in Helvetica
@@ -153,8 +163,13 @@ export function buildInvoice({ order, date, index, settings, sig }) {
   doc.text("Payment due on receipt. Thank you for your business.", margin, termsY + 8);
 
   // ---- signature + footer ----
-  drawSignature(doc, sig, rightX, Math.min(termsY + 30, PAGE.h - 24));
-  drawFooter(doc, seller);
+  // on a letterhead, sit the signature above the letterhead's own footer zone
+  // and skip our drawn footer bar (the letterhead supplies it).
+  const sigLineY = useLh
+    ? PAGE.h - (letterhead.marginBottom || 20) - 8
+    : Math.min(termsY + 30, PAGE.h - 24);
+  drawSignature(doc, sig, rightX, sigLineY);
+  if (!useLh) drawFooter(doc, seller);
 
   return doc;
 }

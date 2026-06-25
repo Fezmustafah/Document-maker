@@ -5,7 +5,7 @@ import SignatureStrip from "./SignatureStrip.jsx";
 
 export default function WeeklyTab({
   rows, settings, onClearWeek, periodStart, periodEnd,
-  signatures, activeSig, activeSigId, onPickSig,
+  signatures, activeSig, activeSigId, onPickSig, letterhead,
 }) {
   const { item } = settings;
   const t = totals(rows.map((r) => r.order), item.vatRate);
@@ -13,7 +13,7 @@ export default function WeeklyTab({
 
   function downloadStatement() {
     if (!rows.length) return;
-    downloadWeekly({ rows, settings, periodStart, periodEnd, sig: activeSig });
+    downloadWeekly({ rows, settings, periodStart, periodEnd, sig: activeSig, letterhead });
   }
   function clearWeek() {
     if (window.confirm("Clear all tracked orders and start a new week? This cannot be undone.")) {
