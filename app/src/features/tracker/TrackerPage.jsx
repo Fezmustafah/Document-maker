@@ -96,10 +96,13 @@ export default function TrackerPage({ onExit, storeKey }) {
       .flatMap((d) => (orders[d] || []).map((order, index) => ({ date: d, index, order })));
   }, [orders]);
 
-  const periodStart = meta.trackingStart || (rows[0]?.date ?? todayIso());
-  const periodEnd = rows.length ? rows[rows.length - 1].date : periodStart;
+  // period start = the earliest of the tracking anchor and the first invoice
+  // date (so back-dated entries pull the start back); the period always spans a
+  // full 7-day billing week from there.
+  const periodStart = [meta.trackingStart, rows[0]?.date].filter(Boolean).sort()[0] || todayIso();
+  const periodEnd = addDays(periodStart, 6);
 
-  // weekly reminder: a full period (7 days) on from the tracking start.
+  // weekly reminder: statement is due one full week (7 days) after the start.
   const reminder = useMemo(() => {
     if (!rows.length) return null;
     const due = addDays(periodStart, 7);
@@ -139,9 +142,12 @@ export default function TrackerPage({ onExit, storeKey }) {
       createdAt: new Date().toISOString(),
     };
     const next = { ...orders, [d]: [...(orders[d] || []), order] };
-    // anchor the tracking period to the earliest delivery on first entry
+    // anchor the tracking period to the earliest delivery; pull it back if this
+    // entry (or a back-dated one) predates the current anchor.
     const earliest = Object.keys(next).sort()[0];
-    const nextMeta = meta.trackingStart ? null : { ...meta, trackingStart: earliest };
+    const nextMeta = !meta.trackingStart || earliest < meta.trackingStart
+      ? { ...meta, trackingStart: earliest }
+      : null;
     commitOrders(next, nextMeta);
   }
 
