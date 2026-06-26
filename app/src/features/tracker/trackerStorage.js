@@ -59,7 +59,10 @@ function mergeOrders(a = {}, b = {}) {
   return out;
 }
 
-// fill defaults + migrate the old single-`item` shape -> items[] + vatRate
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+// fill defaults + migrate old shapes: single `item` -> items[] + vatRate, and a
+// single `buyer` -> buyers[] roster + active buyerId.
 function normalizeSettings(saved) {
   const s = saved || {};
   const items = Array.isArray(s.items) && s.items.length
@@ -68,9 +71,19 @@ function normalizeSettings(saved) {
       ? [{ description: s.item.description, unitPrice: Number(s.item.unitPrice) || 0 }]
       : DEFAULT_SETTINGS.items.map((x) => ({ ...x }));
   const vatRate = s.vatRate != null ? Number(s.vatRate) : s.item?.vatRate != null ? Number(s.item.vatRate) : DEFAULT_VAT_RATE;
+
+  // buyer roster
+  let buyers = Array.isArray(s.buyers) && s.buyers.length
+    ? s.buyers.map((b) => ({ id: b.id || uid(), ...DEFAULT_SETTINGS.buyer, ...b }))
+    : [{ id: "default", ...DEFAULT_SETTINGS.buyer, ...(s.buyer || {}) }];
+  const buyerId = s.buyerId && buyers.some((b) => b.id === s.buyerId) ? s.buyerId : buyers[0].id;
+  const active = buyers.find((b) => b.id === buyerId) || buyers[0];
+
   return {
     seller: { ...DEFAULT_SETTINGS.seller, ...(s.seller || {}) },
-    buyer: { ...DEFAULT_SETTINGS.buyer, ...(s.buyer || {}) },
+    buyers,
+    buyerId,
+    buyer: { ...DEFAULT_SETTINGS.buyer, ...active }, // active buyer, denormalised for the PDFs
     items,
     vatRate,
     header: { ...DEFAULT_SETTINGS.header, ...(s.header || {}) },

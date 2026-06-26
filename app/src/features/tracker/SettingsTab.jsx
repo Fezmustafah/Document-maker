@@ -65,8 +65,36 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
     setSaved(false);
   };
 
+  // ---- buyer roster ----
+  const buyers = draft.buyers || [];
+  const activeBuyer = buyers.find((b) => b.id === draft.buyerId) || buyers[0] || { id: "default" };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const pickBuyer = (id) => { setDraft((d) => ({ ...d, buyerId: id })); setSaved(false); };
+  const setBuyerField = (key) => (v) => {
+    setDraft((d) => ({
+      ...d,
+      buyers: d.buyers.map((b) => (b.id === d.buyerId ? { ...b, [key]: v } : b)),
+    }));
+    setSaved(false);
+  };
+  const addBuyer = () => {
+    const id = uid();
+    setDraft((d) => ({ ...d, buyers: [...d.buyers, { id, name: "New Company", address: "", phone: "", trn: "" }], buyerId: id }));
+    setSaved(false);
+  };
+  const removeBuyer = () => {
+    setDraft((d) => {
+      if (d.buyers.length <= 1) return d;
+      const buyers = d.buyers.filter((b) => b.id !== d.buyerId);
+      return { ...d, buyers, buyerId: buyers[0].id };
+    });
+    setSaved(false);
+  };
+
   function save() {
-    onSave(draft);
+    // mirror the active buyer into `buyer` so the PDFs use it immediately
+    const active = (draft.buyers || []).find((b) => b.id === draft.buyerId) || draft.buyer;
+    onSave({ ...draft, buyer: { ...active } });
     setSaved(true);
   }
 
@@ -82,10 +110,29 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
           <Field label="TRN" value={draft.seller.trn} onChange={set("seller", "trn")} />
         </Card>
         <Card title="Buyer">
-          <Field label="Name" value={draft.buyer.name} onChange={set("buyer", "name")} />
-          <Field label="Registered address (tax notice)" value={draft.buyer.address} onChange={set("buyer", "address")} multiline />
-          <Field label="Phone" value={draft.buyer.phone} onChange={set("buyer", "phone")} />
-          <Field label="TRN" value={draft.buyer.trn} onChange={set("buyer", "trn")} />
+          <div className="flex items-end gap-2">
+            <label className="block flex-1">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-tnavy/70">Company</span>
+              <select
+                value={draft.buyerId}
+                onChange={(e) => pickBuyer(e.target.value)}
+                className="w-full rounded-lg border border-tcreamDark bg-white px-3 py-2 text-sm text-tnavy outline-none focus:border-tgold focus:ring-2 focus:ring-tgold/30"
+              >
+                {buyers.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name || "Unnamed company"}</option>
+                ))}
+              </select>
+            </label>
+            <button type="button" onClick={addBuyer} title="Add a company"
+              className="rounded-lg border border-tnavy px-3 py-2 text-sm font-semibold text-tnavy hover:bg-tcream">+ New</button>
+            <button type="button" onClick={removeBuyer} disabled={buyers.length <= 1} title="Remove this company"
+              className="rounded-lg px-2.5 py-2 text-lg font-bold text-[#C0392B] disabled:opacity-30 hover:bg-red-50">×</button>
+          </div>
+          <Field label="Name" value={activeBuyer.name || ""} onChange={setBuyerField("name")} />
+          <Field label="Registered address (tax notice)" value={activeBuyer.address || ""} onChange={setBuyerField("address")} multiline />
+          <Field label="Phone" value={activeBuyer.phone || ""} onChange={setBuyerField("phone")} />
+          <Field label="TRN" value={activeBuyer.trn || ""} onChange={setBuyerField("trn")} />
+          <p className="text-[11px] text-slate">The selected company is used on all invoices &amp; the weekly statement.</p>
         </Card>
       </div>
 

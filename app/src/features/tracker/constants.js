@@ -28,6 +28,10 @@ export const DEFAULT_VAT_RATE = 5;
 
 export const DEFAULT_SETTINGS = {
   seller: { ...DEFAULT_SELLER },
+  // saved buyer companies; `buyerId` marks the active one and `buyer` mirrors it
+  // (kept denormalised so the PDFs can keep reading settings.buyer unchanged).
+  buyers: [{ id: "default", ...DEFAULT_BUYER }],
+  buyerId: "default",
   buyer: { ...DEFAULT_BUYER },
   // multiple sellable items; each delivery picks one. VAT is a single global rate.
   items: [{ ...DEFAULT_ITEM }],
