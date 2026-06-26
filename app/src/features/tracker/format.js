@@ -55,10 +55,23 @@ export function daysBetween(a, b) {
   return Math.round((db - da) / 86400000);
 }
 
-// VAT / totals for a list of orders (each order has .amount = qty*unitPrice).
+// An order can hold several line items. Older orders stored a single
+// item/qty/unitPrice/amount; normalise both shapes to a lines array.
+export function orderLines(order) {
+  if (Array.isArray(order.lines) && order.lines.length) return order.lines;
+  return [{ item: order.item, qty: order.qty, unitPrice: order.unitPrice, amount: order.amount }];
+}
+export function orderQty(order) {
+  return orderLines(order).reduce((s, l) => s + (Number(l.qty) || 0), 0);
+}
+export function orderAmount(order) {
+  return orderLines(order).reduce((s, l) => s + (Number(l.amount) || 0), 0);
+}
+
+// VAT / totals across a list of orders (each order may have multiple lines).
 export function totals(orders, vatRate) {
-  const subtotal = orders.reduce((s, o) => s + (o.amount || 0), 0);
+  const subtotal = orders.reduce((s, o) => s + orderAmount(o), 0);
   const vat = subtotal * (vatRate / 100);
-  const qty = orders.reduce((s, o) => s + (o.qty || 0), 0);
+  const qty = orders.reduce((s, o) => s + orderQty(o), 0);
   return { subtotal, vat, total: subtotal + vat, qty };
 }

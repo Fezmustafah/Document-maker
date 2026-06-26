@@ -5,7 +5,7 @@ import {
   PAGE, C, newDoc, fill, stroke, ink,
   drawHeader, drawTitle, drawSignature, drawFooter, drawLetterheadBg, moneyRow,
 } from "./pdfShared.js";
-import { money, dateLong, invoiceNo, totals } from "./format.js";
+import { money, dateLong, invoiceNo, totals, orderLines } from "./format.js";
 
 function partyBox(doc, x, y, w, title, lines) {
   const headerH = 7;
@@ -118,22 +118,34 @@ export function buildInvoice({ order, date, index, settings, sig, letterhead }) 
   doc.setLineWidth(0.6);
   doc.line(margin, tableTop + 8, w - margin, tableTop + 8);
 
-  const rowY = tableTop + 8;
-  ink(doc, C.text);
-  doc.setFont("helvetica", "normal").setFontSize(9);
-  doc.text("1", margin + 4, rowY + 6);
-  doc.text(order.item || "", margin + 14, rowY + 6);
-  doc.text(String(order.qty), qtyR, rowY + 6, { align: "right" });
-  doc.text(money(order.unitPrice), unitR, rowY + 6, { align: "right" });
-  doc.text(money(order.amount), amtR, rowY + 6, { align: "right" });
+  // one row per line item
+  const lns = orderLines(order);
+  const rowH = 8;
+  const rowsTop = tableTop + 8;
+  lns.forEach((l, i) => {
+    const ry = rowsTop + i * rowH;
+    if (i % 2 === 1) {
+      fill(doc, C.cream);
+      doc.rect(margin, ry, tableW, rowH, "F");
+    }
+    ink(doc, C.text);
+    doc.setFont("helvetica", "normal").setFontSize(9);
+    const by = ry + 5.6;
+    doc.text(String(i + 1), margin + 4, by);
+    doc.text(l.item || "", margin + 14, by);
+    doc.text(String(l.qty), qtyR, by, { align: "right" });
+    doc.text(money(l.unitPrice), unitR, by, { align: "right" });
+    doc.text(money(l.amount ?? l.qty * l.unitPrice), amtR, by, { align: "right" });
+  });
 
+  const tableBottom = rowsTop + lns.length * rowH;
   stroke(doc, C.navy);
   doc.setLineWidth(0.5);
-  doc.line(margin, rowY + 9, w - margin, rowY + 9);
+  doc.line(margin, tableBottom, w - margin, tableBottom);
 
   // ---- totals ----
   const t = totals([order], vatRate);
-  let ty = rowY + 18;
+  let ty = tableBottom + 9;
   moneyRow(doc, "Subtotal", t.subtotal, rightX, ty);
   ty += 6;
   moneyRow(doc, `VAT (${vatRate}%)`, t.vat, rightX, ty);
@@ -149,10 +161,10 @@ export function buildInvoice({ order, date, index, settings, sig, letterhead }) 
   doc.text("TOTAL", rightX - 66, ty + 6.6);
   doc.text(`AED ${money(t.total)}`, rightX - 4, ty + 6.6, { align: "right" });
 
-  // quantity summary (left, aligned with totals block)
+  // quantity summary (left, aligned with the TOTAL box)
   ink(doc, C.navy);
   doc.setFont("helvetica", "bold").setFontSize(8);
-  doc.text(`Total Quantity Supplied: ${t.qty} Parcels`, margin, rowY + 24);
+  doc.text(`Total Quantity Supplied: ${t.qty} Parcels`, margin, ty + 6.6);
 
   // ---- terms ----
   const termsY = ty + 22;

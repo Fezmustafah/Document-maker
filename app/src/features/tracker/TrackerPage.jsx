@@ -123,16 +123,19 @@ export default function TrackerPage({ onExit, storeKey }) {
     }
   }
 
-  function addOrder(d, qty, location, chosenItem) {
-    const it = chosenItem || settings.items[0] || { description: "", unitPrice: 0 };
-    const unitPrice = Number(it.unitPrice) || 0;
+  // lines: [{ item, qty, unitPrice }] — one invoice can carry several items.
+  function addOrder(d, location, lines) {
+    const norm = lines.map((l) => {
+      const qty = Number(l.qty) || 0;
+      const unitPrice = Number(l.unitPrice) || 0;
+      return { item: l.item, qty, unitPrice, amount: qty * unitPrice };
+    });
     const order = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(),
-      qty,
       location,
-      item: it.description,
-      unitPrice,
-      amount: qty * unitPrice,
+      lines: norm,
+      qty: norm.reduce((s, l) => s + l.qty, 0), // denormalised totals for the
+      amount: norm.reduce((s, l) => s + l.amount, 0), // weekly table / summaries
       createdAt: new Date().toISOString(),
     };
     const next = { ...orders, [d]: [...(orders[d] || []), order] };
