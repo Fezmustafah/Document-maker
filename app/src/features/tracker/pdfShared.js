@@ -10,12 +10,12 @@
 //             false -> classic look:  filled navy/gold bars
 // A single `settings.theme` therefore restyles the whole document.
 import { jsPDF } from "jspdf";
-import { COLORS, getTheme } from "./constants.js";
+import { COLORS, getTheme, resolveTheme } from "./constants.js";
 import { money } from "./format.js";
 
 export const PAGE = { w: 210, h: 297, margin: 14 };
 export const C = COLORS; // legacy classic palette (kept for back-compat)
-export { getTheme };
+export { getTheme, resolveTheme };
 
 export function newDoc() {
   return new jsPDF({ unit: "mm", format: "a4" });
@@ -78,10 +78,10 @@ export function drawHeader(doc, seller, T) {
   doc.rect(0, 0, w, 4, "F");
 
   ink(doc, c.primary);
-  doc.setFont("helvetica", "bold").setFontSize(18);
+  doc.setFont(T.font.display, "bold").setFontSize(18);
   doc.text("BAIT AL MADINA", margin, 21);
   ink(doc, c.accent);
-  doc.setFont("helvetica", "normal").setFontSize(10);
+  doc.setFont(T.font.body, "normal").setFontSize(10);
   doc.text("TRADITIONAL KITCHEN", margin, 26);
   stroke(doc, c.accent);
   doc.setLineWidth(0.5);
@@ -120,7 +120,7 @@ export function drawTitle(doc, title, y, T) {
     return y + 3;
   }
   ink(doc, c.primary);
-  doc.setFont("helvetica", "bold").setFontSize(20);
+  doc.setFont(T.font.display, "bold").setFontSize(20);
   doc.text(title, PAGE.w / 2, y, { align: "center" });
   stroke(doc, c.accent);
   doc.setLineWidth(0.6);

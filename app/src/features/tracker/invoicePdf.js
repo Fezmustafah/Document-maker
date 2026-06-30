@@ -3,7 +3,7 @@
 // measurements in mm. No autotable — the items table is drawn by hand so the
 // styling tracks the weekly statement and the active theme.
 import {
-  PAGE, newDoc, fill, stroke, ink, getTheme,
+  PAGE, newDoc, fill, stroke, ink, resolveTheme,
   drawHeader, drawTitle, drawSignature, drawFooter, drawLetterheadBg,
   partyBox, tableHeadBand, totalBox, moneyRow,
 } from "./pdfShared.js";
@@ -11,7 +11,7 @@ import { money, dateLong, invoiceNo, totals, orderLines } from "./format.js";
 
 export function buildInvoice({ order, date, index, settings, sig, letterhead }) {
   const { seller, buyer, vatRate } = settings;
-  const T = getTheme(settings.theme);
+  const T = resolveTheme(settings, letterhead);
   const c = T.c;
   const useLh = !!(letterhead && letterhead.dataUrl);
   const doc = newDoc();

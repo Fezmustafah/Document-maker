@@ -4,7 +4,7 @@
 // background gotcha) so the header repeats cleanly on every page. Themed via
 // settings.theme (classic navy/gold OR corporate minimal).
 import {
-  PAGE, newDoc, fill, stroke, ink, getTheme,
+  PAGE, newDoc, fill, stroke, ink, resolveTheme,
   drawHeader, drawTitle, drawSignature, drawFooter, drawLetterheadBg,
   partyBox, tableHeadBand, totalBox,
 } from "./pdfShared.js";
@@ -27,7 +27,7 @@ function tableHead(doc, T, y) {
 
 export function buildWeekly({ rows, settings, periodStart, periodEnd, sig, letterhead }) {
   const { seller, buyer, vatRate } = settings;
-  const T = getTheme(settings.theme);
+  const T = resolveTheme(settings, letterhead);
   const c = T.c;
   const useLh = !!(letterhead && letterhead.dataUrl);
   const doc = newDoc();

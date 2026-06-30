@@ -57,14 +57,62 @@ export const COLORS = {
 };
 
 // ---- PDF themes ----------------------------------------------------------
-// Each theme is a palette (`c`) + font choices (`font`) + a `minimal` flag.
-// The shared PDF chrome (pdfShared.js) and both builders branch on these so a
-// single `settings.theme` switch restyles every generated document.
-//   classic   — the original navy/gold/cream: filled bars, colourful.
-//   corporate — minimal monochrome: serif display font, hairline rules, no
-//               filled blocks. Reads cleaner / more formal on plain paper.
+// Each theme is a palette (`c`) + font choices (`font`). Both keep the original
+// filled-bar contrast (so they read crisply on a letterhead); they differ in
+// palette + display font:
+//   classic   — fixed navy/gold/cream Bait Al Madina brand.
+//   corporate — premium palette that ADAPTS to the selected letterhead: the
+//               heading/bar colour is pulled from the letterhead's own brand
+//               colour (so it blends with the page) and paired with a champagne
+//               gold accent + serif headings. No letterhead -> a deep slate.
 const WHITE = { r: 255, g: 255, b: 255 };
 const RED = { r: 192, g: 57, b: 43 };
+const CHAMPAGNE = { r: 176, g: 145, b: 90 }; // #B0915A — premium gold accent
+
+// --- small colour helpers (no deps) ---
+function hexToRgb(hex) {
+  const h = String(hex || "").replace("#", "");
+  const n = h.length === 3 ? h.split("").map((x) => x + x).join("") : h;
+  const i = parseInt(n || "2a3550", 16);
+  return { r: (i >> 16) & 255, g: (i >> 8) & 255, b: i & 255 };
+}
+const clamp = (x) => Math.max(0, Math.min(255, Math.round(x)));
+function mix(a, b, t) {
+  return { r: clamp(a.r + (b.r - a.r) * t), g: clamp(a.g + (b.g - a.g) * t), b: clamp(a.b + (b.b - a.b) * t) };
+}
+function luma(c) {
+  return (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+}
+// Darken a colour until it's deep enough for white text to read on it, while
+// preserving its hue — so a pale brand colour still gives a usable bar.
+function ensureDeep(c, max = 0.42) {
+  const L = luma(c);
+  if (L <= max || L === 0) return c;
+  const k = max / L;
+  return { r: clamp(c.r * k), g: clamp(c.g * k), b: clamp(c.b * k) };
+}
+
+// Build the corporate theme around a letterhead's brand colour (hex) — or a
+// premium slate default when no letterhead is in play.
+export function corporateTheme(brandHex) {
+  const brand = ensureDeep(hexToRgb(brandHex || "#2A3550"));
+  return {
+    key: "corporate",
+    minimal: false,
+    c: {
+      primary: brand, // bars, headings, table header fill — matched to letterhead
+      accent: CHAMPAGNE, // champagne underlines / edges
+      panel: mix(brand, WHITE, 0.94), // faint brand tint for box bodies / zebra
+      panelEdge: mix(brand, WHITE, 0.74), // soft brand-tinted borders
+      white: WHITE,
+      text: { r: 31, g: 31, b: 36 },
+      muted: { r: 107, g: 107, b: 115 },
+      red: RED,
+    },
+    // Serif display reads premium/editorial; body stays Helvetica for figures.
+    font: { display: "times", body: "helvetica" },
+  };
+}
 
 export const THEMES = {
   classic: {
@@ -82,27 +130,21 @@ export const THEMES = {
     },
     font: { display: "helvetica", body: "helvetica" },
   },
-  corporate: {
-    key: "corporate",
-    minimal: true,
-    c: {
-      primary: { r: 26, g: 26, b: 26 }, // near-black ink for headings/rules
-      accent: { r: 130, g: 130, b: 130 }, // grey hairlines / labels
-      panel: { r: 248, g: 248, b: 246 }, // barely-there alt row tint
-      panelEdge: { r: 219, g: 217, b: 213 }, // hairline borders
-      white: WHITE,
-      text: { r: 26, g: 26, b: 26 },
-      muted: { r: 118, g: 118, b: 118 },
-      red: RED,
-    },
-    // Times (serif) for display lines reads more corporate/editorial; the body
-    // stays Helvetica for clean tabular figures.
-    font: { display: "times", body: "helvetica" },
-  },
+  // static fallback (used if resolved without a letterhead context)
+  corporate: corporateTheme(null),
 };
 
 export function getTheme(name) {
   return THEMES[name] || THEMES.classic;
+}
+
+// Resolve the theme to draw with, given settings + the letterhead in use.
+// Corporate adapts its brand colour to that letterhead; classic is fixed.
+export function resolveTheme(settings, letterhead) {
+  if (settings && settings.theme === "corporate") {
+    return corporateTheme(letterhead && letterhead.accent ? letterhead.accent : null);
+  }
+  return THEMES.classic;
 }
 
 // One full tracking period = 7 days (deliver daily, settle weekly).

@@ -214,7 +214,7 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
             }
           >
             <span className="block font-semibold text-tnavy">Corporate</span>
-            <span className="text-xs text-slate">Minimal monochrome, serif headings, hairline rules.</span>
+            <span className="text-xs text-slate">Premium palette matched to your letterhead colour, serif headings.</span>
           </button>
         </div>
         <p className="mt-2 text-[11px] text-slate">Applies to both the daily tax invoice and the weekly statement PDFs.</p>
