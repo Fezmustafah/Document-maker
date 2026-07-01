@@ -5,16 +5,19 @@
 import {
   PAGE, newDoc, fill, stroke, ink, resolveTheme,
   drawHeader, drawTitle, drawSignature, drawFooter, drawLetterheadBg,
-  partyBox, partyBodyHeight, PARTY_HEADER_H, tableHeadBand, totalBox, moneyRow,
+  partyBox, partyBodyHeight, PARTY_HEADER_H, tableHeadBand, totalBox, moneyRow, bankBox,
 } from "./pdfShared.js";
 import { money, dateLong, invoiceNo, totals, orderLines, extraLines } from "./format.js";
 
-export function buildInvoice({ order, date, index, settings, sig, letterhead }) {
+export function buildInvoice({ order, date, index, settings, sig, letterhead, doc: sharedDoc }) {
   const { seller, buyer, vatRate } = settings;
   const T = resolveTheme(settings, letterhead);
   const c = T.c;
   const useLh = !!(letterhead && letterhead.dataUrl);
-  const doc = newDoc();
+  // When a shared doc is passed (SoA pack), draw onto its current page so the
+  // letterhead / signature images are stored ONCE for the whole bundle. jsPDF
+  // caches identical images per-document — separate docs would re-embed them.
+  const doc = sharedDoc || newDoc();
   const { w, margin } = PAGE;
   const rightX = w - margin;
 
@@ -163,6 +166,9 @@ export function buildInvoice({ order, date, index, settings, sig, letterhead }) 
   doc.text("All amounts are in AED (United Arab Emirates Dirham), inclusive of 5% VAT where applicable.", margin, termsY);
   doc.text("This is a computer-generated tax invoice and is valid without a physical signature.", margin, termsY + 4);
   doc.text("Payment due on receipt. Thank you for your business.", margin, termsY + 8);
+
+  // ---- beneficiary bank details (bottom-left) ----
+  bankBox(doc, T, margin, termsY + 13, 104, seller.bank);
 
   // ---- signature + footer ----
   // on a letterhead, sit the signature above the letterhead's own footer zone

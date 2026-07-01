@@ -26,19 +26,22 @@ export default function WeeklyTab({
     downloadWeekly({ rows, settings: stSettings, periodStart, periodEnd, sig: activeSig, letterhead });
   }
 
-  // Full pack: statement + a signed invoice for every line, merged to one PDF.
-  async function downloadPack() {
+  // Full pack: statement + a signed invoice for every line, in ONE PDF.
+  function downloadPack() {
     if (!rows.length || building) return;
     const stSettings = { ...settings, buyer: { ...statementBuyer } };
     setBuilding(true);
-    try {
-      await downloadStatementPack({ rows, settings: stSettings, periodStart, periodEnd, sig: activeSig, letterhead });
-    } catch (err) {
-      console.error("SoA pack failed", err);
-      window.alert("Could not build the SoA bundle. Please try again.");
-    } finally {
-      setBuilding(false);
-    }
+    // defer so the button repaints "Building…" before the synchronous build
+    setTimeout(() => {
+      try {
+        downloadStatementPack({ rows, settings: stSettings, periodStart, periodEnd, sig: activeSig, letterhead });
+      } catch (err) {
+        console.error("SoA pack failed", err);
+        window.alert("Could not build the SoA bundle. Please try again.");
+      } finally {
+        setBuilding(false);
+      }
+    }, 20);
   }
   function clearWeek() {
     if (window.confirm("Clear all tracked orders and start a new week? This cannot be undone.")) {

@@ -1,47 +1,31 @@
 // statementPack.js — one combined "Statement of Account" bundle: the Weekly
 // Statement page(s) followed by a signed TAX INVOICE for every line in the
-// statement, merged into a SINGLE PDF the buyer can verify line-by-line.
+// statement, all in a SINGLE PDF the buyer can verify line-by-line.
 //
-// Reuses buildWeekly + buildInvoice (each returns its own jsPDF doc) and stitches
-// their pages together with pdf-lib (already a dep from the Sign-a-PDF feature).
-// The active signature is stamped on the statement AND on every invoice, so the
-// whole pack ships "signed" — that's what the buyer means by "attach all
-// invoices in SoA".
-import { PDFDocument } from "pdf-lib";
+// Built as ONE jsPDF document (not many docs merged) so the letterhead image
+// and the signature PNG are embedded only ONCE for the whole bundle — jsPDF
+// caches identical images per-document. The earlier merge-with-pdf-lib approach
+// re-embedded the full-res letterhead on every page (~12×), which is what blew
+// the file up to ~26 MB.
+import { newDoc } from "./pdfShared.js";
 import { buildWeekly } from "./weeklyPdf.js";
 import { buildInvoice } from "./invoicePdf.js";
 
-// Build the merged bundle bytes. rows are already in statement order (matches
-// the statement's line numbering / invoice numbers).
-export async function buildStatementPackBytes({ rows, settings, periodStart, periodEnd, sig, letterhead }) {
-  const parts = [];
-  // 1) the statement itself
-  parts.push(buildWeekly({ rows, settings, periodStart, periodEnd, sig, letterhead }));
-  // 2) one signed invoice per line, in the same order
+// rows are already in statement order (matches the statement's line numbering /
+// invoice numbers).
+export function buildStatementPackDoc({ rows, settings, periodStart, periodEnd, sig, letterhead }) {
+  const doc = newDoc(); // starts on a blank page 1
+  buildWeekly({ rows, settings, periodStart, periodEnd, sig, letterhead, doc });
   for (const r of rows) {
-    parts.push(buildInvoice({ order: r.order, date: r.date, index: r.index, settings, sig, letterhead }));
+    doc.addPage();
+    buildInvoice({ order: r.order, date: r.date, index: r.index, settings, sig, letterhead, doc });
   }
-
-  const merged = await PDFDocument.create();
-  for (const doc of parts) {
-    const src = await PDFDocument.load(doc.output("arraybuffer"));
-    const pages = await merged.copyPages(src, src.getPageIndices());
-    pages.forEach((p) => merged.addPage(p));
-  }
-  return merged.save();
+  return doc;
 }
 
-export async function downloadStatementPack(args) {
-  const bytes = await buildStatementPackBytes(args);
-  const blob = new Blob([bytes], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+export function downloadStatementPack(args) {
+  const doc = buildStatementPackDoc(args);
   const start = args.periodStart.replace(/-/g, "");
   const end = args.periodEnd.replace(/-/g, "");
-  a.href = url;
-  a.download = `BAM-SoA-${start}-${end}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  doc.save(`BAM-SoA-${start}-${end}.pdf`);
 }

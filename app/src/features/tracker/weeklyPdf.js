@@ -6,7 +6,7 @@
 import {
   PAGE, newDoc, fill, stroke, ink, resolveTheme,
   drawHeader, drawTitle, drawSignature, drawFooter, drawLetterheadBg,
-  partyBox, partyBodyHeight, PARTY_HEADER_H, tableHeadBand, totalBox,
+  partyBox, partyBodyHeight, PARTY_HEADER_H, tableHeadBand, totalBox, bankBox,
 } from "./pdfShared.js";
 import { money, dateShort, dateLong, invoiceNo, totals, extraLines } from "./format.js";
 
@@ -25,12 +25,12 @@ function tableHead(doc, T, y) {
   ]);
 }
 
-export function buildWeekly({ rows, settings, periodStart, periodEnd, sig, letterhead }) {
+export function buildWeekly({ rows, settings, periodStart, periodEnd, sig, letterhead, doc: sharedDoc }) {
   const { seller, buyer, vatRate } = settings;
   const T = resolveTheme(settings, letterhead);
   const c = T.c;
   const useLh = !!(letterhead && letterhead.dataUrl);
-  const doc = newDoc();
+  const doc = sharedDoc || newDoc();
   const { w, margin } = PAGE;
   const rightX = w - margin;
 
@@ -144,6 +144,9 @@ export function buildWeekly({ rows, settings, periodStart, periodEnd, sig, lette
     margin,
     ty + 6,
   );
+
+  // beneficiary bank details (bottom-left, below the stats line)
+  bankBox(doc, T, margin, ty + 12, 104, seller.bank);
 
   const sigLineY = useLh ? PAGE.h - (letterhead.marginBottom || 20) - 8 : Math.min(ty + 34, PAGE.h - 24);
   drawSignature(doc, sig, rightX, sigLineY, T);

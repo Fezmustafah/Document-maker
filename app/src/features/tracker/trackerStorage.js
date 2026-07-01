@@ -86,7 +86,13 @@ function normalizeSettings(saved) {
   const active = buyers.find((b) => b.id === buyerId) || buyers[0];
 
   return {
-    seller: { ...DEFAULT_SETTINGS.seller, ...(s.seller || {}), extra: sanitizeExtra(s.seller?.extra) },
+    seller: {
+      ...DEFAULT_SETTINGS.seller,
+      ...(s.seller || {}),
+      extra: sanitizeExtra(s.seller?.extra),
+      // nested-merge bank so old saved blobs (no bank key) still get the fields
+      bank: { ...DEFAULT_SETTINGS.seller.bank, ...(s.seller?.bank || {}) },
+    },
     buyers,
     buyerId,
     buyer: { ...DEFAULT_SETTINGS.buyer, ...active }, // active buyer, denormalised for the PDFs (incl. extra)

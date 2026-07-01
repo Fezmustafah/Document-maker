@@ -2,6 +2,14 @@
 // Daily Invoice Tracker. Self-contained: nothing here is shared with the
 // letterhead document generator.
 
+export const DEFAULT_BANK = {
+  bankName: "",
+  accountName: "Bait Al Madina Traditional Kitchen",
+  accountNo: "",
+  iban: "",
+  swift: "",
+};
+
 export const DEFAULT_SELLER = {
   name: "Bait Al Madina Traditional Kitchen",
   nameAr: "مطبخ بيت المدينة الشعبي",
@@ -9,6 +17,8 @@ export const DEFAULT_SELLER = {
   phone: "+971 55 692 5963 / +971 54 448 6615",
   email: "adnankhanbhutta786@gmail.com",
   trn: "104213822000003",
+  // beneficiary bank details printed on every invoice + the statement
+  bank: { ...DEFAULT_BANK },
 };
 
 export const DEFAULT_BUYER = {

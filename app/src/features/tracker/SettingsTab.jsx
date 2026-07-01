@@ -102,6 +102,13 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
     setSaved(false);
   };
 
+  // seller beneficiary bank details (nested under seller.bank)
+  const bank = draft.seller.bank || {};
+  const setBank = (key) => (v) => {
+    setDraft((d) => ({ ...d, seller: { ...d.seller, bank: { ...(d.seller.bank || {}), [key]: v } } }));
+    setSaved(false);
+  };
+
   const items = draft.items || [];
   const setItem = (i, key, v) => {
     setDraft((d) => ({
@@ -195,6 +202,19 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
           <p className="text-[11px] text-slate">The selected company is used on all invoices &amp; the weekly statement.</p>
         </Card>
       </div>
+
+      <Card title="Beneficiary bank details">
+        <p className="text-[11px] text-slate">
+          Printed on every tax invoice and the weekly statement so the buyer can pay. Leave all blank to hide the block.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Bank name" value={bank.bankName || ""} onChange={setBank("bankName")} />
+          <Field label="Account name" value={bank.accountName || ""} onChange={setBank("accountName")} />
+          <Field label="Account number" value={bank.accountNo || ""} onChange={setBank("accountNo")} />
+          <Field label="IBAN" value={bank.iban || ""} onChange={setBank("iban")} />
+          <Field label="SWIFT / BIC" value={bank.swift || ""} onChange={setBank("swift")} />
+        </div>
+      </Card>
 
       <Card title="Items & VAT">
         <div className="space-y-2">

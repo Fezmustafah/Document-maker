@@ -302,6 +302,62 @@ export function drawFooter(doc, seller, T) {
   doc.text(line, w / 2, top + 6.2, { align: "center" });
 }
 
+// Beneficiary / bank details block (bottom-left of invoices + statement).
+// Rows with a blank value are dropped; the whole block is skipped when the
+// seller has no bank details at all. Returns the y at the block's bottom.
+//   classic   — primary title bar + panel body, bordered.
+//   corporate — grey caps label over a hairline, plain rows, no fills.
+export function bankBox(doc, T, x, y, w, bank) {
+  const c = T.c;
+  const rows = [
+    ["Bank", bank && bank.bankName],
+    ["Account Name", bank && bank.accountName],
+    ["Account No", bank && bank.accountNo],
+    ["IBAN", bank && bank.iban],
+    ["SWIFT", bank && bank.swift],
+  ].filter(([, v]) => v && String(v).trim());
+  if (!rows.length) return y;
+
+  const headerH = 6;
+  const rowH = 4.4;
+  const bodyH = rows.length * rowH + 4;
+
+  if (T.minimal) {
+    ink(doc, c.muted);
+    doc.setFont(T.font.body, "bold").setFontSize(7.5);
+    doc.setCharSpace?.(0.6);
+    doc.text("BENEFICIARY BANK DETAILS", x, y + 4);
+    doc.setCharSpace?.(0);
+    stroke(doc, c.panelEdge);
+    doc.setLineWidth(0.3);
+    doc.line(x, y + headerH, x + w, y + headerH);
+  } else {
+    fill(doc, c.primary);
+    doc.roundedRect(x, y, w, headerH, 1.2, 1.2, "F");
+    ink(doc, c.white);
+    doc.setFont("helvetica", "bold").setFontSize(7.5);
+    doc.text("BENEFICIARY BANK DETAILS", x + 3, y + 4.2);
+    fill(doc, c.panel);
+    stroke(doc, c.panelEdge);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(x, y + headerH, w, bodyH, 1.2, 1.2, "FD");
+  }
+
+  let ly = y + headerH + 4;
+  const labelX = x + (T.minimal ? 0 : 3);
+  const valX = x + (T.minimal ? 28 : 30);
+  for (const [label, value] of rows) {
+    ink(doc, c.muted);
+    doc.setFont(T.font.body, "normal").setFontSize(7.5);
+    doc.text(`${label}`, labelX, ly);
+    ink(doc, c.text);
+    doc.setFont(T.font.body, "bold").setFontSize(7.5);
+    doc.text(String(value), valX, ly);
+    ly += rowH;
+  }
+  return y + headerH + bodyH;
+}
+
 // Right-aligned "label .... value" money row used in totals stacks.
 export function moneyRow(doc, label, value, rightX, y, opts = {}) {
   const labelX = opts.labelX ?? rightX - 55;
