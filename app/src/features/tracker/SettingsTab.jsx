@@ -150,20 +150,43 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
   const layout = draft.layout || "standard";
   const setLayout = (l) => { setDraft((d) => ({ ...d, layout: l })); setSaved(false); };
 
-  // custom fields: seller (object) + active buyer (roster entry)
-  const setSellerExtra = (next) => {
-    setDraft((d) => ({ ...d, seller: { ...d.seller, extra: next } }));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  // ---- seller / beneficiary roster (each seller keeps its OWN bank) ----
+  const sellers = draft.sellers || [];
+  const activeSeller = sellers.find((se) => se.id === draft.sellerId) || sellers[0] || { id: "default", bank: {} };
+  const pickSeller = (id) => { setDraft((d) => ({ ...d, sellerId: id })); setSaved(false); };
+  const setSellerField = (key) => (v) => {
+    setDraft((d) => ({ ...d, sellers: d.sellers.map((se) => (se.id === d.sellerId ? { ...se, [key]: v } : se)) }));
     setSaved(false);
   };
+  const setSellerExtra = (next) => {
+    setDraft((d) => ({ ...d, sellers: d.sellers.map((se) => (se.id === d.sellerId ? { ...se, extra: next } : se)) }));
+    setSaved(false);
+  };
+  const addSeller = () => {
+    const id = uid();
+    setDraft((d) => ({ ...d, sellers: [...d.sellers, { id, name: "New Company", nameAr: "", address: "", phone: "", email: "", trn: "", extra: [], bank: { bankName: "", accountName: "", accountNo: "", iban: "", swift: "" } }], sellerId: id }));
+    setSaved(false);
+  };
+  const removeSeller = () => {
+    setDraft((d) => {
+      if (d.sellers.length <= 1) return d;
+      const sellers = d.sellers.filter((se) => se.id !== d.sellerId);
+      return { ...d, sellers, sellerId: sellers[0].id };
+    });
+    setSaved(false);
+  };
+
   const setBuyerExtra = (next) => {
     setDraft((d) => ({ ...d, buyers: d.buyers.map((b) => (b.id === d.buyerId ? { ...b, extra: next } : b)) }));
     setSaved(false);
   };
 
-  // seller beneficiary bank details (nested under seller.bank)
-  const bank = draft.seller.bank || {};
+  // active seller's beneficiary bank details
+  const bank = activeSeller.bank || {};
   const setBank = (key) => (v) => {
-    setDraft((d) => ({ ...d, seller: { ...d.seller, bank: { ...(d.seller.bank || {}), [key]: v } } }));
+    setDraft((d) => ({ ...d, sellers: d.sellers.map((se) => (se.id === d.sellerId ? { ...se, bank: { ...(se.bank || {}), [key]: v } } : se)) }));
     setSaved(false);
   };
 
@@ -191,7 +214,6 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
   // ---- buyer roster ----
   const buyers = draft.buyers || [];
   const activeBuyer = buyers.find((b) => b.id === draft.buyerId) || buyers[0] || { id: "default" };
-  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const pickBuyer = (id) => { setDraft((d) => ({ ...d, buyerId: id })); setSaved(false); };
   const setBuyerField = (key) => (v) => {
     setDraft((d) => ({
@@ -215,23 +237,43 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
   };
 
   function save() {
-    // mirror the active buyer into `buyer` so the PDFs use it immediately
-    const active = (draft.buyers || []).find((b) => b.id === draft.buyerId) || draft.buyer;
-    onSave({ ...draft, buyer: { ...active } });
+    // mirror the active seller + buyer into `seller`/`buyer` so the PDFs use them immediately
+    const activeB = (draft.buyers || []).find((b) => b.id === draft.buyerId) || draft.buyer;
+    const activeS = (draft.sellers || []).find((se) => se.id === draft.sellerId) || draft.seller;
+    onSave({ ...draft, seller: { ...activeS }, buyer: { ...activeB } });
     setSaved(true);
   }
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <Card title="Seller">
-          <Field label="Name" value={draft.seller.name} onChange={set("seller", "name")} />
-          <Field label="Name (Arabic)" value={draft.seller.nameAr} onChange={set("seller", "nameAr")} />
-          <Field label="Address" value={draft.seller.address} onChange={set("seller", "address")} />
-          <Field label="Phone" value={draft.seller.phone} onChange={set("seller", "phone")} />
-          <Field label="Email" value={draft.seller.email} onChange={set("seller", "email")} />
-          <Field label="TRN" value={draft.seller.trn} onChange={set("seller", "trn")} />
-          <ExtraFields fields={draft.seller.extra || []} onChange={setSellerExtra} />
+        <Card title="Seller / Beneficiary">
+          <div className="flex items-end gap-2">
+            <label className="block flex-1">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-tnavy/70">Company</span>
+              <select
+                value={draft.sellerId}
+                onChange={(e) => pickSeller(e.target.value)}
+                className="w-full rounded-lg border border-tcreamDark bg-white px-3 py-2 text-sm text-tnavy outline-none focus:border-tgold focus:ring-2 focus:ring-tgold/30"
+              >
+                {sellers.map((se) => (
+                  <option key={se.id} value={se.id}>{se.name || "Unnamed company"}</option>
+                ))}
+              </select>
+            </label>
+            <button type="button" onClick={addSeller} title="Add a company"
+              className="rounded-lg border border-tnavy px-3 py-2 text-sm font-semibold text-tnavy hover:bg-tcream">+ New</button>
+            <button type="button" onClick={removeSeller} disabled={sellers.length <= 1} title="Remove this company"
+              className="rounded-lg px-2.5 py-2 text-lg font-bold text-[#C0392B] disabled:opacity-30 hover:bg-red-50">×</button>
+          </div>
+          <Field label="Name" value={activeSeller.name || ""} onChange={setSellerField("name")} />
+          <Field label="Name (Arabic)" value={activeSeller.nameAr || ""} onChange={setSellerField("nameAr")} />
+          <Field label="Address" value={activeSeller.address || ""} onChange={setSellerField("address")} />
+          <Field label="Phone" value={activeSeller.phone || ""} onChange={setSellerField("phone")} />
+          <Field label="Email" value={activeSeller.email || ""} onChange={setSellerField("email")} />
+          <Field label="TRN" value={activeSeller.trn || ""} onChange={setSellerField("trn")} />
+          <ExtraFields fields={activeSeller.extra || []} onChange={setSellerExtra} />
+          <p className="text-[11px] text-slate">Each company keeps its own bank details below. Switching here changes which one prints.</p>
         </Card>
         <Card title="Buyer">
           <div className="flex items-end gap-2">
@@ -261,9 +303,9 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
         </Card>
       </div>
 
-      <Card title="Beneficiary bank details">
+      <Card title={`Beneficiary bank details — ${activeSeller.name || "seller"}`}>
         <p className="text-[11px] text-slate">
-          Printed on every tax invoice and the weekly statement so the buyer can pay. Leave all blank to hide the block.
+          Bank details for the seller company selected above. Printed on its invoices &amp; statement so the buyer can pay. Leave all blank to hide the block.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Bank name" value={bank.bankName || ""} onChange={setBank("bankName")} />

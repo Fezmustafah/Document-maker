@@ -37,6 +37,11 @@ export const DEFAULT_ITEM = {
 export const DEFAULT_VAT_RATE = 5;
 
 export const DEFAULT_SETTINGS = {
+  // saved seller/beneficiary companies; `sellerId` marks the active one and
+  // `seller` mirrors it (denormalised so PDFs keep reading settings.seller).
+  // Each seller carries its OWN bank/beneficiary details.
+  sellers: [{ id: "default", ...DEFAULT_SELLER }],
+  sellerId: "default",
   seller: { ...DEFAULT_SELLER },
   // saved buyer companies; `buyerId` marks the active one and `buyer` mirrors it
   // (kept denormalised so the PDFs can keep reading settings.buyer unchanged).
@@ -58,7 +63,7 @@ export const DEFAULT_SETTINGS = {
 // ---- invoice LAYOUTS (structure, orthogonal to the colour skin) ----------
 // Each entry drives the invoice block arrangement (see invoiceLayouts.js).
 export const LAYOUTS = [
-  { key: "standard", name: "Standard", desc: "Seller & buyer boxed side-by-side, table, totals right." },
+  { key: "standard", name: "Default", desc: "The original Bait Al Madina format — seller & buyer boxed side-by-side." },
   { key: "sidebar", name: "Sidebar", desc: "Coloured left rail (seller + pay-to bank); buyer & table on the right." },
   { key: "centered", name: "Centered", desc: "Seller in the header, buyer highlighted left, invoice details listed right." },
   { key: "compact", name: "Compact", desc: "Letter style: seller top-left, details top-right, single bill-to band." },

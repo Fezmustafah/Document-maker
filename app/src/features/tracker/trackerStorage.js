@@ -78,6 +78,15 @@ function normalizeSettings(saved) {
       : DEFAULT_SETTINGS.items.map((x) => ({ ...x }));
   const vatRate = s.vatRate != null ? Number(s.vatRate) : s.item?.vatRate != null ? Number(s.item.vatRate) : DEFAULT_VAT_RATE;
 
+  const sellerBank = (se) => ({ ...DEFAULT_SETTINGS.seller.bank, ...((se && se.bank) || {}) });
+
+  // seller / beneficiary roster (each seller keeps its OWN bank details)
+  let sellers = Array.isArray(s.sellers) && s.sellers.length
+    ? s.sellers.map((se) => ({ id: se.id || uid(), ...DEFAULT_SETTINGS.seller, ...se, extra: sanitizeExtra(se.extra), bank: sellerBank(se) }))
+    : [{ id: "default", ...DEFAULT_SETTINGS.seller, ...(s.seller || {}), extra: sanitizeExtra(s.seller?.extra), bank: sellerBank(s.seller) }];
+  const sellerId = s.sellerId && sellers.some((se) => se.id === s.sellerId) ? s.sellerId : sellers[0].id;
+  const activeSeller = sellers.find((se) => se.id === sellerId) || sellers[0];
+
   // buyer roster
   let buyers = Array.isArray(s.buyers) && s.buyers.length
     ? s.buyers.map((b) => ({ id: b.id || uid(), ...DEFAULT_SETTINGS.buyer, ...b, extra: sanitizeExtra(b.extra) }))
@@ -86,13 +95,9 @@ function normalizeSettings(saved) {
   const active = buyers.find((b) => b.id === buyerId) || buyers[0];
 
   return {
-    seller: {
-      ...DEFAULT_SETTINGS.seller,
-      ...(s.seller || {}),
-      extra: sanitizeExtra(s.seller?.extra),
-      // nested-merge bank so old saved blobs (no bank key) still get the fields
-      bank: { ...DEFAULT_SETTINGS.seller.bank, ...(s.seller?.bank || {}) },
-    },
+    sellers,
+    sellerId,
+    seller: { ...DEFAULT_SETTINGS.seller, ...activeSeller }, // active seller, denormalised for the PDFs (incl. bank + extra)
     buyers,
     buyerId,
     buyer: { ...DEFAULT_SETTINGS.buyer, ...active }, // active buyer, denormalised for the PDFs (incl. extra)
