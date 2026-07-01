@@ -1,6 +1,61 @@
 // SettingsTab — editable seller / buyer / item defaults, persisted to IndexedDB.
 import { useState } from "react";
-import { TRACKER_TEMPLATES } from "./constants.js";
+import { TRACKER_TEMPLATES, LAYOUTS } from "./constants.js";
+
+// Tiny wireframe preview of each invoice layout (pure divs).
+function LayoutThumb({ kind }) {
+  const bar = "rounded-sm bg-tnavy/80";
+  const soft = "rounded-sm bg-tnavy/15";
+  if (kind === "sidebar") {
+    return (
+      <div className="flex h-14 gap-1">
+        <div className="w-1/3 rounded-sm bg-tnavy/80" />
+        <div className="flex flex-1 flex-col gap-1">
+          <div className={"h-2 w-2/3 self-end " + bar} />
+          <div className={"h-1.5 w-1/2 " + soft} />
+          <div className={"mt-auto h-4 w-full " + soft} />
+        </div>
+      </div>
+    );
+  }
+  if (kind === "centered") {
+    return (
+      <div className="flex h-14 flex-col gap-1">
+        <div className={"mx-auto h-2 w-1/2 " + bar} />
+        <div className="flex gap-1">
+          <div className={"h-3 w-1/2 " + soft} />
+          <div className={"h-3 w-1/2 " + soft} />
+        </div>
+        <div className={"mt-auto h-4 w-full " + soft} />
+        <div className={"h-1.5 w-1/3 self-end " + bar} />
+      </div>
+    );
+  }
+  if (kind === "compact") {
+    return (
+      <div className="flex h-14 flex-col gap-1">
+        <div className="flex justify-between">
+          <div className={"h-2 w-1/3 " + bar} />
+          <div className={"h-2 w-1/4 " + soft} />
+        </div>
+        <div className={"h-2.5 w-full " + soft} />
+        <div className={"mt-auto h-4 w-full " + soft} />
+        <div className={"h-1.5 w-1/3 self-end " + bar} />
+      </div>
+    );
+  }
+  // standard
+  return (
+    <div className="flex h-14 flex-col gap-1">
+      <div className="flex gap-1">
+        <div className={"h-4 w-1/2 " + soft} />
+        <div className={"h-4 w-1/2 " + soft} />
+      </div>
+      <div className={"h-4 w-full " + soft} />
+      <div className={"mt-auto h-1.5 w-1/3 self-end " + bar} />
+    </div>
+  );
+}
 
 function Field({ label, value, onChange, type = "text", multiline = false }) {
   const cls =
@@ -92,6 +147,8 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
   };
   const theme = draft.theme || "classic";
   const setTheme = (t) => { setDraft((d) => ({ ...d, theme: t })); setSaved(false); };
+  const layout = draft.layout || "standard";
+  const setLayout = (l) => { setDraft((d) => ({ ...d, layout: l })); setSaved(false); };
 
   // custom fields: seller (object) + active buyer (roster entry)
   const setSellerExtra = (next) => {
@@ -271,7 +328,46 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
         </div>
       </Card>
 
-      <Card title="Template">
+      <Card title="Layout">
+        <style>{`@keyframes tmplPop{0%{transform:scale(0) rotate(-30deg);opacity:0}70%{transform:scale(1.25) rotate(0)}100%{transform:scale(1);opacity:1}}`}</style>
+        <p className="text-[11px] text-slate">Where each block sits on the page. Changes structure — pair with any colour below.</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {LAYOUTS.map((l) => {
+            const active = layout === l.key;
+            return (
+              <button
+                key={l.key}
+                type="button"
+                onClick={() => setLayout(l.key)}
+                title={l.name}
+                className={
+                  "group relative overflow-hidden rounded-xl border p-2.5 text-left transition-all duration-300 ease-out " +
+                  (active
+                    ? "scale-[1.03] border-tgold bg-tcream shadow-md ring-2 ring-tgold/40"
+                    : "border-tcreamDark hover:-translate-y-0.5 hover:border-tgold/60 hover:shadow-sm")
+                }
+              >
+                <div className="mb-2 rounded-md bg-white p-1.5 ring-1 ring-black/5">
+                  <LayoutThumb kind={l.key} />
+                </div>
+                <span className="block text-sm font-bold text-tnavy">{l.name}</span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-slate">{l.desc}</span>
+                {active && (
+                  <span
+                    className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-tgold text-[11px] font-bold text-white shadow"
+                    style={{ animation: "tmplPop .28s ease-out" }}
+                  >
+                    ✓
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-1 text-[11px] text-slate">Sidebar prints on the built-in header; on a letterhead it falls back to Standard.</p>
+      </Card>
+
+      <Card title="Colour">
         <style>{`@keyframes tmplPop{0%{transform:scale(0) rotate(-30deg);opacity:0}70%{transform:scale(1.25) rotate(0)}100%{transform:scale(1);opacity:1}}`}</style>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {TRACKER_TEMPLATES.map((t) => {

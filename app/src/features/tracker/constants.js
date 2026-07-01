@@ -49,10 +49,27 @@ export const DEFAULT_SETTINGS = {
   // header style: built-in drawn header (default) OR one of the user's saved
   // letterheads rendered as the page background.
   header: { style: "drawn", letterheadId: null }, // "drawn" | "letterhead"
-  // document look: "classic" = navy/gold/cream colourful theme (default),
-  // "corporate" = minimal monochrome, serif display font, hairline rules.
-  theme: "classic", // "classic" | "corporate"
+  // colour SKIN: one of the TEMPLATES keys (classic default).
+  theme: "classic",
+  // structural LAYOUT (where the blocks sit): one of LAYOUTS keys.
+  layout: "standard", // "standard" | "sidebar" | "centered" | "compact"
 };
+
+// ---- invoice LAYOUTS (structure, orthogonal to the colour skin) ----------
+// Each entry drives the invoice block arrangement (see invoiceLayouts.js).
+export const LAYOUTS = [
+  { key: "standard", name: "Standard", desc: "Seller & buyer boxed side-by-side, table, totals right." },
+  { key: "sidebar", name: "Sidebar", desc: "Coloured left rail (seller + pay-to bank); buyer & table on the right." },
+  { key: "centered", name: "Centered", desc: "Seller in the header, buyer highlighted left, invoice details listed right." },
+  { key: "compact", name: "Compact", desc: "Letter style: seller top-left, details top-right, single bill-to band." },
+];
+
+export function isLayout(key) {
+  return LAYOUTS.some((l) => l.key === key);
+}
+export function resolveLayout(settings) {
+  return settings && isLayout(settings.layout) ? settings.layout : "standard";
+}
 
 // Exact RGB values mirrored from the Tailwind tracker tokens (see tailwind.config.js).
 export const COLORS = {
