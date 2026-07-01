@@ -66,15 +66,17 @@ export const COLORS = {
   red:       { r: 192, g: 57,  b: 43  }, // #C0392B — delete buttons
 };
 
-// ---- PDF themes ----------------------------------------------------------
-// Each theme is a palette (`c`) + font choices (`font`). Both keep the original
-// filled-bar contrast (so they read crisply on a letterhead); they differ in
-// palette + display font:
-//   classic   — fixed navy/gold/cream Bait Al Madina brand.
-//   corporate — premium palette that ADAPTS to the selected letterhead: the
-//               heading/bar colour is pulled from the letterhead's own brand
-//               colour (so it blends with the page) and paired with a champagne
-//               gold accent + serif headings. No letterhead -> a deep slate.
+// ---- PDF templates -------------------------------------------------------
+// A TEMPLATE = a colour skin (`c` palette + `font`) + a LAYOUT (`minimal` for
+// banded-vs-hairline chrome, plus `layout.header` and `layout.title` for
+// structural variants). The drawing helpers in pdfShared read all of these, so
+// one `settings.theme` key restyles AND relays out the whole document.
+//   layout.header : "bar"    filled colour top bar + wordmark (classic)
+//                   "banner" full-width colour band, centered white wordmark
+//                   "rule"   minimal: wordmark + single hairline rule
+//   layout.title  : "center" | "left"
+// Two templates are "adaptive": their primary colour is pulled from the
+// selected letterhead so the chrome blends with the page.
 const WHITE = { r: 255, g: 255, b: 255 };
 const RED = { r: 192, g: 57, b: 43 };
 const CHAMPAGNE = { r: 176, g: 145, b: 90 }; // #B0915A — premium gold accent
@@ -102,59 +104,109 @@ function ensureDeep(c, max = 0.42) {
   return { r: clamp(c.r * k), g: clamp(c.g * k), b: clamp(c.b * k) };
 }
 
-// Build the corporate theme around a letterhead's brand colour (hex) — or a
-// premium slate default when no letterhead is in play.
-export function corporateTheme(brandHex) {
-  const brand = ensureDeep(hexToRgb(brandHex || "#2A3550"));
+// Fixed skin palette from a few hexes.
+function palette({ primary, accent, panel, panelEdge, text = "#222222", muted = "#666666" }) {
   return {
-    key: "corporate",
-    minimal: false,
-    c: {
-      primary: brand, // bars, headings, table header fill — matched to letterhead
-      accent: CHAMPAGNE, // champagne underlines / edges
-      panel: mix(brand, WHITE, 0.94), // faint brand tint for box bodies / zebra
-      panelEdge: mix(brand, WHITE, 0.74), // soft brand-tinted borders
-      white: WHITE,
-      text: { r: 31, g: 31, b: 36 },
-      muted: { r: 107, g: 107, b: 115 },
-      red: RED,
-    },
-    // Serif display reads premium/editorial; body stays Helvetica for figures.
-    font: { display: "times", body: "helvetica" },
+    primary: hexToRgb(primary),
+    accent: hexToRgb(accent),
+    panel: hexToRgb(panel),
+    panelEdge: hexToRgb(panelEdge),
+    white: WHITE,
+    text: hexToRgb(text),
+    muted: hexToRgb(muted),
+    red: RED,
   };
 }
 
+// Adaptive palette built around a letterhead's brand colour (hex) — deep slate
+// default when no letterhead is in play.
+function adaptivePalette(brandHex) {
+  const brand = ensureDeep(hexToRgb(brandHex || "#2A3550"));
+  return {
+    primary: brand,
+    accent: CHAMPAGNE,
+    panel: mix(brand, WHITE, 0.94),
+    panelEdge: mix(brand, WHITE, 0.74),
+    white: WHITE,
+    text: { r: 31, g: 31, b: 36 },
+    muted: { r: 107, g: 107, b: 115 },
+    red: RED,
+  };
+}
+
+// The six templates. `swatch` [primary, accent] drives the Settings preview.
 export const THEMES = {
   classic: {
-    key: "classic",
-    minimal: false,
-    c: {
-      primary: COLORS.navy, // bars, headings, table header fill
-      accent: COLORS.gold, // rules, edges, underlines
-      panel: COLORS.cream, // box fills, alt rows
-      panelEdge: COLORS.creamDark, // box borders
-      white: WHITE,
-      text: COLORS.text,
-      muted: COLORS.muted,
-      red: RED,
-    },
+    key: "classic", name: "Classic", minimal: false, adaptive: false,
+    desc: "Navy & gold, filled bars. The Bait Al Madina default.",
+    c: palette({ primary: "#1B2A5B", accent: "#C8A951", panel: "#FAF8F3", panelEdge: "#E0DDD5" }),
     font: { display: "helvetica", body: "helvetica" },
+    layout: { header: "bar", title: "center" },
+    swatch: ["#1B2A5B", "#C8A951"],
   },
-  // static fallback (used if resolved without a letterhead context)
-  corporate: corporateTheme(null),
+  royal: {
+    key: "royal", name: "Royal", minimal: false, adaptive: false,
+    desc: "Indigo banner header, gold accents, serif headings.",
+    c: palette({ primary: "#2E1A6B", accent: "#C8A951", panel: "#F3F1FA", panelEdge: "#DAD3EC" }),
+    font: { display: "times", body: "helvetica" },
+    layout: { header: "banner", title: "center" },
+    swatch: ["#2E1A6B", "#C8A951"],
+  },
+  emerald: {
+    key: "emerald", name: "Emerald", minimal: false, adaptive: false,
+    desc: "Deep green & gold, filled bars.",
+    c: palette({ primary: "#0F5132", accent: "#C8A951", panel: "#F1F6F2", panelEdge: "#D6E3DA" }),
+    font: { display: "helvetica", body: "helvetica" },
+    layout: { header: "bar", title: "center" },
+    swatch: ["#0F5132", "#C8A951"],
+  },
+  maroon: {
+    key: "maroon", name: "Maroon", minimal: false, adaptive: false,
+    desc: "Deep maroon & gold, serif headings.",
+    c: palette({ primary: "#6E1423", accent: "#C8A951", panel: "#F7F0F0", panelEdge: "#E4D3D3" }),
+    font: { display: "times", body: "helvetica" },
+    layout: { header: "bar", title: "center" },
+    swatch: ["#6E1423", "#C8A951"],
+  },
+  graphite: {
+    key: "graphite", name: "Graphite", minimal: true, adaptive: false,
+    desc: "Minimal monochrome, hairline rules, left-aligned title.",
+    c: palette({ primary: "#23272E", accent: "#8A8F98", panel: "#F4F5F6", panelEdge: "#DEE1E4" }),
+    font: { display: "helvetica", body: "helvetica" },
+    layout: { header: "rule", title: "left" },
+    swatch: ["#23272E", "#8A8F98"],
+  },
+  corporate: {
+    key: "corporate", name: "Corporate", minimal: true, adaptive: true,
+    desc: "Premium minimal that matches your letterhead colour, serif headings.",
+    c: adaptivePalette(null),
+    font: { display: "times", body: "helvetica" },
+    layout: { header: "rule", title: "center" },
+    swatch: ["#2A3550", "#B0915A"],
+  },
 };
+
+// Order shown in the Settings picker (Classic first = default).
+export const TRACKER_TEMPLATES = [
+  THEMES.classic, THEMES.royal, THEMES.emerald, THEMES.maroon, THEMES.graphite, THEMES.corporate,
+];
+
+export function isTemplate(name) {
+  return !!(name && THEMES[name]);
+}
 
 export function getTheme(name) {
   return THEMES[name] || THEMES.classic;
 }
 
-// Resolve the theme to draw with, given settings + the letterhead in use.
-// Corporate adapts its brand colour to that letterhead; classic is fixed.
+// Resolve the template to draw with, given settings + the letterhead in use.
+// Adaptive templates (corporate) pull their primary colour from the letterhead.
 export function resolveTheme(settings, letterhead) {
-  if (settings && settings.theme === "corporate") {
-    return corporateTheme(letterhead && letterhead.accent ? letterhead.accent : null);
+  const tpl = getTheme(settings && settings.theme);
+  if (tpl.adaptive) {
+    return { ...tpl, c: adaptivePalette(letterhead && letterhead.accent ? letterhead.accent : null) };
   }
-  return THEMES.classic;
+  return tpl;
 }
 
 // One full tracking period = 7 days (deliver daily, settle weekly).

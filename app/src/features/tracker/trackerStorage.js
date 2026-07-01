@@ -9,7 +9,7 @@
 import { get, set, del } from "idb-keyval";
 import { getUserId } from "../../lib/authState.js";
 import { cloudEnabled, supabase } from "../../lib/supabase.js";
-import { DEFAULT_SETTINGS, DEFAULT_VAT_RATE } from "./constants.js";
+import { DEFAULT_SETTINGS, DEFAULT_VAT_RATE, isTemplate } from "./constants.js";
 
 const ORDERS_KEY = "tracker-orders"; // { [isoDate]: Order[] }
 const SETTINGS_KEY = "tracker-settings"; // { seller, buyer, items, vatRate, header }
@@ -99,7 +99,7 @@ function normalizeSettings(saved) {
     items,
     vatRate,
     header: { ...DEFAULT_SETTINGS.header, ...(s.header || {}) },
-    theme: s.theme === "corporate" ? "corporate" : "classic",
+    theme: isTemplate(s.theme) ? s.theme : "classic",
   };
 }
 

@@ -55,10 +55,12 @@ export function buildWeekly({ rows, settings, periodStart, periodEnd, sig, lette
   }
   drawTitle(doc, "WEEKLY STATEMENT", titleY, T);
 
-  // period (centered under the title)
+  // period line — follows the title alignment (center, or left for graphite)
   ink(doc, c.text);
   doc.setFont(T.font.body, "normal").setFontSize(9.5);
-  doc.text(`Period: ${dateShort(periodStart)} — ${dateShort(periodEnd)}`, w / 2, titleY + 8, { align: "center" });
+  const periodText = `Period: ${dateShort(periodStart)} — ${dateShort(periodEnd)}`;
+  if (T.layout && T.layout.title === "left") doc.text(periodText, margin, titleY + 8);
+  else doc.text(periodText, w / 2, titleY + 8, { align: "center" });
 
   // ---- BOTH parties: seller + buyer boxes (matches the invoice) ----
   const boxW = 82;

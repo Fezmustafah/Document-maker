@@ -1,5 +1,6 @@
 // SettingsTab — editable seller / buyer / item defaults, persisted to IndexedDB.
 import { useState } from "react";
+import { TRACKER_TEMPLATES } from "./constants.js";
 
 function Field({ label, value, onChange, type = "text", multiline = false }) {
   const cls =
@@ -89,7 +90,7 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
     setDraft((d) => ({ ...d, header: { ...d.header, ...patch } }));
     setSaved(false);
   };
-  const theme = draft.theme === "corporate" ? "corporate" : "classic";
+  const theme = draft.theme || "classic";
   const setTheme = (t) => { setDraft((d) => ({ ...d, theme: t })); setSaved(false); };
 
   // custom fields: seller (object) + active buyer (roster entry)
@@ -270,32 +271,44 @@ export default function SettingsTab({ settings, onSave, letterheads = [] }) {
         </div>
       </Card>
 
-      <Card title="Document style">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setTheme("classic")}
-            className={
-              "rounded-lg border p-3 text-left text-sm transition " +
-              (theme === "classic" ? "border-tgold bg-tcream ring-2 ring-tgold/30" : "border-tcreamDark hover:border-tgold/50")
-            }
-          >
-            <span className="block font-semibold text-tnavy">Classic</span>
-            <span className="text-xs text-slate">Colourful navy &amp; gold theme with filled bars.</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setTheme("corporate")}
-            className={
-              "rounded-lg border p-3 text-left text-sm transition " +
-              (theme === "corporate" ? "border-tgold bg-tcream ring-2 ring-tgold/30" : "border-tcreamDark hover:border-tgold/50")
-            }
-          >
-            <span className="block font-semibold text-tnavy">Corporate</span>
-            <span className="text-xs text-slate">Premium palette matched to your letterhead colour, serif headings.</span>
-          </button>
+      <Card title="Template">
+        <style>{`@keyframes tmplPop{0%{transform:scale(0) rotate(-30deg);opacity:0}70%{transform:scale(1.25) rotate(0)}100%{transform:scale(1);opacity:1}}`}</style>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {TRACKER_TEMPLATES.map((t) => {
+            const active = theme === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTheme(t.key)}
+                title={t.name}
+                className={
+                  "group relative overflow-hidden rounded-xl border p-2.5 text-left transition-all duration-300 ease-out " +
+                  (active
+                    ? "scale-[1.03] border-tgold bg-tcream shadow-md ring-2 ring-tgold/40"
+                    : "border-tcreamDark hover:-translate-y-0.5 hover:border-tgold/60 hover:shadow-sm")
+                }
+              >
+                {/* colour swatch preview */}
+                <div className="mb-2 flex h-9 overflow-hidden rounded-md ring-1 ring-black/5">
+                  <span className="flex-1 transition-transform duration-500 group-hover:scale-110" style={{ background: t.swatch[0] }} />
+                  <span className="w-1/3 transition-transform duration-500 group-hover:scale-110" style={{ background: t.swatch[1] }} />
+                </div>
+                <span className="block text-sm font-bold text-tnavy">{t.name}</span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-slate">{t.desc}</span>
+                {active && (
+                  <span
+                    className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-tgold text-[11px] font-bold text-white shadow"
+                    style={{ animation: "tmplPop .28s ease-out" }}
+                  >
+                    ✓
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        <p className="mt-2 text-[11px] text-slate">Applies to both the daily tax invoice and the weekly statement PDFs.</p>
+        <p className="mt-2 text-[11px] text-slate">Applies to the daily tax invoice, the weekly statement, and the SoA bundle PDFs.</p>
       </Card>
 
       <Card title="Invoice header">

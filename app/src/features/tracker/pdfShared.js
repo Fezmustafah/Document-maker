@@ -47,6 +47,26 @@ export function drawHeader(doc, seller, T) {
   const c = T.c;
   const rx = w - margin;
 
+  // ---- banner: full-width colour band, centered white wordmark ----
+  if (T.layout && T.layout.header === "banner") {
+    fill(doc, c.primary);
+    doc.rect(0, 0, w, 30, "F");
+    fill(doc, c.accent);
+    doc.rect(0, 30, w, 1.4, "F");
+    ink(doc, c.white);
+    doc.setFont(T.font.display, "bold").setFontSize(21);
+    doc.text("BAIT AL MADINA", w / 2, 15, { align: "center" });
+    ink(doc, c.accent);
+    doc.setFont(T.font.body, "normal").setFontSize(9);
+    doc.setCharSpace?.(1.2);
+    doc.text("TRADITIONAL KITCHEN", w / 2, 21.5, { align: "center" });
+    doc.setCharSpace?.(0);
+    ink(doc, c.text);
+    doc.setFont(T.font.body, "normal").setFontSize(7.5);
+    doc.text(`${seller.address}    |    ${seller.phone}    |    ${seller.email}`, w / 2, 37, { align: "center" });
+    return 32;
+  }
+
   if (T.minimal) {
     // ---- corporate: serif wordmark, grey caption, single hairline rule ----
     ink(doc, c.text);
@@ -108,23 +128,28 @@ export function drawHeader(doc, seller, T) {
 // corporate: centered serif, letter-spaced, thin grey rule. Returns y below.
 export function drawTitle(doc, title, y, T) {
   const c = T.c;
+  const left = T.layout && T.layout.title === "left";
+  const cx = left ? PAGE.margin : PAGE.w / 2;
+  const align = left ? undefined : { align: "center" };
   if (T.minimal) {
     ink(doc, c.text);
     doc.setFont(T.font.display, "bold").setFontSize(19);
     doc.setCharSpace?.(1.2);
-    doc.text(title, PAGE.w / 2, y, { align: "center" });
+    doc.text(title, cx, y, align);
     doc.setCharSpace?.(0);
     stroke(doc, c.muted);
     doc.setLineWidth(0.3);
-    doc.line(PAGE.w / 2 - 16, y + 3, PAGE.w / 2 + 16, y + 3);
+    if (left) doc.line(cx, y + 3, cx + 32, y + 3);
+    else doc.line(cx - 16, y + 3, cx + 16, y + 3);
     return y + 3;
   }
   ink(doc, c.primary);
   doc.setFont(T.font.display, "bold").setFontSize(20);
-  doc.text(title, PAGE.w / 2, y, { align: "center" });
+  doc.text(title, cx, y, align);
   stroke(doc, c.accent);
   doc.setLineWidth(0.6);
-  doc.line(PAGE.w / 2 - 25, y + 3, PAGE.w / 2 + 25, y + 3);
+  if (left) doc.line(cx, y + 3, cx + 50, y + 3);
+  else doc.line(cx - 25, y + 3, cx + 25, y + 3);
   return y + 3;
 }
 
